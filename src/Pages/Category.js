@@ -106,8 +106,8 @@ const Category = () => {
     setSelectedCategory(cat);
     setName(cat.name);
     setImagePreview(
-      `${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"}uploads${cat.image}`
-    );
+      `/uploads${cat.image}`
+    ); // ${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"}
     setImageFile(null);
     setIsEditOpen(true);
   };
@@ -189,7 +189,7 @@ const Category = () => {
                   <Td fontWeight="medium">{cat.name}</Td>
                   <Td>
                     <Image
-                      src={`${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"}uploads${cat.image}`}
+                      src={`/uploads${cat.image}`} // ${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"}
                       boxSize="55px"
                       objectFit="cover"
                       borderRadius="lg"

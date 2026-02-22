@@ -107,9 +107,9 @@ const SubCategory = () => {
     });
     setImagePreview(
       sub.image
-        ? `${process.env.REACT_APP_API_URL}uploads${sub.image}`
+        ? `/uploads${sub.image}`
         : null
-    );
+    ); // ${process.env.REACT_APP_API_URL}
     setEditModalOpen(true);
   };
 
@@ -189,7 +189,7 @@ const SubCategory = () => {
                   <Td>
                     {sub.image ? (
                       <img
-                        src={`${process.env.REACT_APP_API_URL}uploads${sub.image}`}
+                        src={`/uploads${sub.image}`} // ${process.env.REACT_APP_API_URL}
                         alt={sub.name}
                         style={{
                           width: 70,

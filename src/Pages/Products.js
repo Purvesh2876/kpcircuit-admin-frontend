@@ -250,7 +250,7 @@ const ProductManagement = () => {
                 {p.images && p.images[0] && (
                   <Image
                     // Fallback to localhost if ENV not set, change as needed
-                    src={`${process.env.REACT_APP_API_URL || 'http://76.13.247.39:5000/'}uploads${p.images[0]}`}
+                    src={`/uploads${p.images[0]}`} // ${process.env.REACT_APP_API_URL || 'http://76.13.247.39:5000/'}
                     boxSize="50px"
                     objectFit="cover"
                   />
@@ -417,7 +417,7 @@ const ProductManagement = () => {
                     {existingImages.map((img, index) => (
                       <Box key={index} position="relative">
                         <Image
-                          src={`${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"}uploads${img}`}
+                          src={`/uploads${img}`} // ${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"} 
                           boxSize="60px"
                           objectFit="cover"
                           borderRadius="md"
