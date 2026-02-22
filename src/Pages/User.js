@@ -32,7 +32,7 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/auth/getAllUsers', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/auth/getAllUsers`, {
         withCredentials: true,
       });
 
@@ -79,7 +79,7 @@ const UsersPage = () => {
   };
 
   // --- Handle Save Changes ---
-// --- Handle Save Changes ---
+  // --- Handle Save Changes ---
   const handleSave = async () => {
     try {
       // Convert React Select objects back to a simple string array
@@ -88,13 +88,13 @@ const UsersPage = () => {
       const updatedData = {
         ...currentUser,
         // CRITICAL FIX: Changed 'roles' to 'role' to match your database key
-        role: finalRoles 
+        role: finalRoles
       };
 
       // API Call
-      await axios.put(`http://localhost:5000/api/auth/updateUser/${currentUser._id}`, updatedData, {
+      await axios.put(`${process.env.REACT_APP_API_URL}/auth/updateUser/${currentUser._id}`, updatedData, {
         withCredentials: true
-      });
+      }); // http://76.13.247.39:5000/api
 
       toast({ title: 'User updated successfully', status: 'success', duration: 3000 });
 

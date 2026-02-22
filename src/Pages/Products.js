@@ -250,7 +250,7 @@ const ProductManagement = () => {
                 {p.images && p.images[0] && (
                   <Image
                     // Fallback to localhost if ENV not set, change as needed
-                    src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000/'}uploads${p.images[0]}`}
+                    src={`${process.env.REACT_APP_API_URL || 'http://76.13.247.39:5000/'}uploads${p.images[0]}`}
                     boxSize="50px"
                     objectFit="cover"
                   />
@@ -273,201 +273,6 @@ const ProductManagement = () => {
         </Tbody>
       </Table>
 
-      {/* ---------------- MODAL ---------------- */}
-      {/* <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {editingProduct ? "Edit Product" : "Add Product"}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <form onSubmit={handleSubmit}>
-              <Stack spacing={4} pb={6}>
-                <FormControl isRequired>
-                  <FormLabel>Name</FormLabel>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Manufacturer</FormLabel>
-                  <Input
-                    value={formData.manufacturer}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        manufacturer: e.target.value,
-                      })
-                    }
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    value={formData.category}
-                    onChange={handleCategoryChange}
-                    placeholder="Select Category"
-                  >
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>SubCategory</FormLabel>
-                  <Select
-                    value={formData.subCategory}
-                    onChange={(e) =>
-                      setFormData({ ...formData, subCategory: e.target.value })
-                    }
-                    placeholder="Select SubCategory"
-                  >
-                    {subCategories.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Description</FormLabel>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) =>
-                        setFormData({ ...formData, description: e.target.value })
-                    }
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel>Price</FormLabel>
-                  <Input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: e.target.value })
-                    }
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel>Stock</FormLabel>
-                  <Input
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) =>
-                      setFormData({ ...formData, stock: e.target.value })
-                    }
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <Checkbox
-                    isChecked={formData.featured}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        featured: e.target.checked,
-                      })
-                    }
-                  >
-                    Featured Product
-                  </Checkbox>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Images</FormLabel>
-
-                  <Input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    sx={{
-                      "::file-selector-button": {
-                        height: 10,
-                        padding: 0,
-                        mr: 4,
-                        background: "none",
-                        border: "none",
-                        fontWeight: "bold",
-                      },
-                    }}
-                  />
-
-                  <Box mt={4}>
-                    <Text fontSize="sm" mb={2} color="gray.500">
-                      Selected Images:
-                    </Text>
-
-                    <SimpleGrid columns={[3, 4, 5]} spacing={4}>
-                      {existingImages.map((img, index) => (
-                        <Box key={`existing-${index}`} position="relative">
-                          <Image
-                            src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000/'}uploads${img}`}
-                            boxSize="70px"
-                            objectFit="cover"
-                            borderRadius="md"
-                            border="1px solid #ddd"
-                          />
-                          <IconButton
-                            icon={<CloseIcon />}
-                            size="xs"
-                            colorScheme="red"
-                            position="absolute"
-                            top="-8px"
-                            right="-8px"
-                            rounded="full"
-                            onClick={() => removeExistingImage(index)}
-                            aria-label="Remove image"
-                          />
-                        </Box>
-                      ))}
-
-                      {newImages.map((file, index) => (
-                        <Box key={`new-${index}`} position="relative">
-                          <Image
-                            src={URL.createObjectURL(file)}
-                            boxSize="70px"
-                            objectFit="cover"
-                            borderRadius="md"
-                            border="2px solid purple" 
-                          />
-                          <IconButton
-                            icon={<CloseIcon />}
-                            size="xs"
-                            colorScheme="red"
-                            position="absolute"
-                            top="-8px"
-                            right="-8px"
-                            rounded="full"
-                            onClick={() => removeNewImage(index)}
-                            aria-label="Remove image"
-                          />
-                        </Box>
-                      ))}
-                    </SimpleGrid>
-                  </Box>
-                </FormControl>
-
-                <Button type="submit" colorScheme="purple">
-                  Save Product
-                </Button>
-              </Stack>
-            </form>
-          </ModalBody>
-        </ModalContent>
-      </Modal> */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="xl" isCentered>
         <ModalOverlay backdropFilter="blur(4px)" />
         <ModalContent borderRadius="xl">
@@ -612,7 +417,7 @@ const ProductManagement = () => {
                     {existingImages.map((img, index) => (
                       <Box key={index} position="relative">
                         <Image
-                          src={`${process.env.REACT_APP_API_URL || "http://localhost:5000/"}uploads${img}`}
+                          src={`${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"}uploads${img}`}
                           boxSize="60px"
                           objectFit="cover"
                           borderRadius="md"

@@ -23,7 +23,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/admin">
       <div>
         <Header />
 
