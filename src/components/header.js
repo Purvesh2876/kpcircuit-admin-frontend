@@ -57,9 +57,9 @@ const Header = () => {
                   <Divider />
                   <Text><Link to="/users">Users</Link></Text>
                   <Divider />
-                  <Text onClick={handleLogout}>Logout</Text>
+                  <Text onClick={handleLogout} cursor={'pointer'}>Logout</Text>
                   <Divider />
-                  <Text>VISIT STORE</Text>
+                  <Text><Link to="/">VISIT STORE</Link></Text>
                   <Divider />
                 </VStack>
               </DrawerBody>
@@ -71,7 +71,8 @@ const Header = () => {
 
       {/* Center (Logo) */}
       <Box align="center" color="black" >
-        <img src={logo} height={'50%'} width={'50%'}></img>
+        {/* <img src={logo} height={'50%'} width={'50%'}></img> */}
+        KP CIRCUIT CITY
       </Box>
 
       <Box display={'flex'}>
