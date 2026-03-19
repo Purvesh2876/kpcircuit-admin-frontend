@@ -37,6 +37,8 @@ import {
   deleteProduct,
   getAllCategories,
   getSubCategoriesByCategory,
+  addStock,
+  getInventoryLogs,
 } from "../actions/apiActions";
 
 const ProductManagement = () => {
@@ -46,6 +48,39 @@ const ProductManagement = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [stockQty, setStockQty] = useState("");
+  const [stockNote, setStockNote] = useState("");
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyLogs, setHistoryLogs] = useState([]);
+  const [historyProduct, setHistoryProduct] = useState(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+
+  const openStockModal = (product) => {
+    setSelectedProduct(product);
+    setStockQty("");
+    setStockNote("");
+    setIsStockModalOpen(true);
+  };
+
+  const openHistoryModal = async (product, page = 1) => {
+    try {
+      const res = await getInventoryLogs(product._id, page, 10);
+
+      setHistoryLogs(res.logs);
+      setHistoryPage(res.page);
+      setHistoryTotalPages(res.totalPages);
+
+      setHistoryProduct(product);
+      setIsHistoryModalOpen(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load history");
+    }
+  };
 
   // SEPARATE STATE FOR IMAGES
   // 1. Array of strings (URLs) for images already on the server
@@ -131,7 +166,6 @@ const ProductManagement = () => {
       subCategory: product.subCategory?._id || "", // Safe navigation
       description: product.description,
       price: product.price,
-      stock: product.stock,
       featured: product.featured,
     });
 
@@ -169,6 +203,26 @@ const ProductManagement = () => {
   // Remove an existing image (String URL)
   const removeExistingImage = (index) => {
     setExistingImages(existingImages.filter((_, i) => i !== index));
+  };
+
+  const handleAddStock = async () => {
+    if (!stockQty || Number(stockQty) <= 0) {
+      alert("Enter valid quantity");
+      return;
+    }
+
+    try {
+      await addStock(selectedProduct._id, {
+        quantity: stockQty,
+        note: stockNote,
+      });
+
+      setIsStockModalOpen(false);
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add stock");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -239,6 +293,7 @@ const ProductManagement = () => {
             <Th>Image</Th>
             <Th>Category</Th>
             <Th>Price</Th>
+            <Th>Stock</Th>
             <Th>Actions</Th>
           </Tr>
         </Thead>
@@ -258,10 +313,18 @@ const ProductManagement = () => {
               </Td>
               <Td>{p.category?.name}</Td>
               <Td>₹{p.price}</Td>
+              <Td>{p.stock}</Td>
               <Td>
                 <ButtonGroup size="sm">
                   <Button onClick={() => openEditModal(p)}>
                     <EditIcon />
+                  </Button>
+                  <Button onClick={() => openStockModal(p)} colorScheme="blue">
+                    + Stock
+                  </Button>
+                  {/* 🔥 ADD THIS */}
+                  <Button colorScheme="purple" onClick={() => openHistoryModal(p)}>
+                    History
                   </Button>
                   <Button colorScheme="red" onClick={() => handleDelete(p._id)}>
                     <DeleteIcon />
@@ -376,17 +439,19 @@ const ProductManagement = () => {
                     />
                   </FormControl>
 
-                  <FormControl isRequired>
-                    <FormLabel fontSize="sm">Stock</FormLabel>
-                    <Input
-                      size="sm"
-                      type="number"
-                      value={formData.stock}
-                      onChange={(e) =>
-                        setFormData({ ...formData, stock: e.target.value })
-                      }
-                    />
-                  </FormControl>
+                  {!editingProduct && (
+                    <FormControl isRequired>
+                      <FormLabel fontSize="sm">Stock</FormLabel>
+                      <Input
+                        size="sm"
+                        type="number"
+                        value={formData.stock}
+                        onChange={(e) =>
+                          setFormData({ ...formData, stock: e.target.value })
+                        }
+                      />
+                    </FormControl>
+                  )}
                 </SimpleGrid>
 
                 <Checkbox
@@ -464,6 +529,99 @@ const ProductManagement = () => {
                 </Button>
               </Stack>
             </form>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={isStockModalOpen} onClose={() => setIsStockModalOpen(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add Stock</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={4}>
+            <Stack spacing={3}>
+              <FormControl isRequired>
+                <FormLabel>Quantity</FormLabel>
+                <Input
+                  type="number"
+                  value={stockQty}
+                  onChange={(e) => setStockQty(e.target.value)}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Note</FormLabel>
+                <Input
+                  value={stockNote}
+                  onChange={(e) => setStockNote(e.target.value)}
+                />
+              </FormControl>
+
+              <Button colorScheme="blue" onClick={handleAddStock}>
+                Add Stock
+              </Button>
+            </Stack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            Inventory History - {historyProduct?.name}
+          </ModalHeader>
+          <ModalCloseButton />
+
+          <ModalBody>
+            <Table size="sm">
+              <Thead>
+                <Tr>
+                  <Th>Date</Th>
+                  <Th>Type</Th>
+                  <Th>Qty</Th>
+                  <Th>Reason</Th>
+                  <Th>Note</Th>
+                </Tr>
+              </Thead>
+
+              <Tbody>
+                {historyLogs.map((log) => (
+                  <Tr key={log._id}>
+                    <Td>{new Date(log.createdAt).toLocaleString()}</Td>
+
+                    <Td color={log.type === "IN" ? "green.500" : "red.500"}>
+                      {log.type}
+                    </Td>
+
+                    <Td>{log.quantity}</Td>
+                    <Td>{log.reason}</Td>
+                    <Td>{log.note}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+
+            {/* Pagination */}
+            <Box display="flex" justifyContent="space-between" mt={4}>
+              <Button
+                size="sm"
+                disabled={historyPage === 1}
+                onClick={() => openHistoryModal(historyProduct, historyPage - 1)}
+              >
+                Prev
+              </Button>
+
+              <Text>
+                Page {historyPage} / {historyTotalPages}
+              </Text>
+
+              <Button
+                size="sm"
+                disabled={historyPage === historyTotalPages}
+                onClick={() => openHistoryModal(historyProduct, historyPage + 1)}
+              >
+                Next
+              </Button>
+            </Box>
           </ModalBody>
         </ModalContent>
       </Modal>

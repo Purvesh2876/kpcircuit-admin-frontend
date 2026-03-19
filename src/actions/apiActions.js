@@ -177,3 +177,28 @@ export const updateOrderStatus = async (id, statusData) => {
         throw error;
     }
 };
+
+
+// Add stock
+
+export const addStock = async (productId, stockData) => {
+    try {
+        const res = await instance.post(`/products/${productId}/add-stock`, stockData);
+        return res.data;
+    } catch (error) {
+        console.error("Add stock error:", error);
+        throw error;
+    }
+};
+
+export const getInventoryLogs = async (productId, page = 1, limit = 10) => {
+    try {
+        const res = await instance.get(`/products/${productId}/inventory`, {
+            params: { page, limit },
+        });
+        return res.data;
+    } catch (error) {
+        console.error("Get inventory logs error:", error);
+        throw error;
+    }
+};
