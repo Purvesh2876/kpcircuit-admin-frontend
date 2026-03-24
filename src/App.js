@@ -29,7 +29,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/admin">
       <Flex h="100vh" w="100%" overflow="hidden">
 
         {/* SIDEBAR (Visible only when logged in) */}
