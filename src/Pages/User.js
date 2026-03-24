@@ -4,7 +4,7 @@ import {
   Box, Heading, Table, Thead, Tbody, Tr, Th, Td,
   Spinner, Button, Modal, ModalOverlay, ModalContent,
   ModalHeader, ModalCloseButton, ModalBody, ModalFooter,
-  FormControl, FormLabel, Input, useDisclosure, Badge, Stack, useToast
+  FormControl, FormLabel, Input, useDisclosure, Badge, Stack, useToast, Center, Text
 } from '@chakra-ui/react';
 import { EditIcon } from '@chakra-ui/icons';
 import Select from 'react-select'; // Import React Select
@@ -114,47 +114,68 @@ const UsersPage = () => {
   };
 
   return (
-    <Box p={4}>
-      <Heading mb={4}>User Management</Heading>
+    <Box maxW="100%">
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
+        <Box>
+          <Heading size="lg" fontWeight="bold" letterSpacing="tight" mb={1}>Users</Heading>
+          <Text color="gray.500" fontSize="sm">Manage accounts and platform access</Text>
+        </Box>
+      </Box>
 
       {loading ? (
-        <Spinner size="xl" />
+        <Center h="40vh">
+          <Spinner size="xl" />
+        </Center>
       ) : (
-        <Table variant="simple">
-          <Thead>
-            <Tr>
-              <Th>Name</Th>
-              <Th>Email</Th>
-              <Th>Mobile</Th>
-              <Th>Roles</Th>
-              <Th>Action</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {users?.map((user) => (
-              <Tr key={user._id}>
-                {/* Ensure we access properties safely */}
-                <Td>{user.name || 'N/A'}</Td>
-                <Td>{user.email}</Td>
-                <Td>{user.mobile || 'N/A'}</Td>
-                <Td>
-                  {/* Check if roles exists and is an array, then join with comma */}
-                  {Array.isArray(user.role) ? user.role.join(', ') : 'N/A'}
-                </Td>
-                <Td>
-                  <Button
-                    size="sm"
-                    colorScheme="blue"
-                    leftIcon={<EditIcon />}
-                    onClick={() => handleEditClick(user)}
-                  >
-                    Edit
-                  </Button>
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
+        <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" overflow="hidden">
+          <Box overflowX="auto">
+            <Table variant="simple" size="md">
+              <Thead bg="gray.50">
+                <Tr>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Name</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Email</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Mobile</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Roles</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider" textAlign="right">Action</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {users?.map((user) => (
+                  <Tr key={user._id} _hover={{ bg: "gray.50" }}>
+                    <Td fontWeight="medium" color="black">{user.name || 'N/A'}</Td>
+                    <Td color="gray.600">{user.email}</Td>
+                    <Td color="gray.600">{user.mobile || 'N/A'}</Td>
+                    <Td>
+                      {Array.isArray(user.role) ? (
+                        <Stack direction="row" spacing={2}>
+                          {user.role.map((r, i) => (
+                            <Badge key={i} colorScheme={r === "admin" ? "purple" : "gray"} borderRadius="full" px="2" py="0.5">
+                              {r.toUpperCase()}
+                            </Badge>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Text color="gray.500">N/A</Text>
+                      )}
+                    </Td>
+                    <Td textAlign="right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        borderColor="gray.300"
+                        color="gray.600"
+                        _hover={{ bg: "gray.50" }}
+                        onClick={() => handleEditClick(user)}
+                      >
+                        Edit
+                      </Button>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        </Box>
       )}
 
       {/* --- EDIT MODAL --- */}

@@ -105,72 +105,79 @@ const AdminOrders = () => {
   };
 
   return (
-    <Container maxW="container.xl" py={10}>
-      <Heading mb={6}>Admin Order Management</Heading>
-
-      <HStack mb={4}>
-        <InputGroup maxW="250px">
-          <InputLeftElement children={<SearchIcon />} />
-          <Input
-            placeholder="Search by Order ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && loadOrders(1)}
-          />
-        </InputGroup>
-
-        <Button size="sm" onClick={() => loadOrders(1)}>
-          Search
-        </Button>
-        <Select
-          size="sm"
-          maxW="180px"
-          value={paymentStatus}
-          onChange={(e) => {
-            setPaymentStatus(e.target.value);
-          }}
-        >
-          <option value="">All Payments</option>
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="failed">Failed</option>
-          <option value="refunded">Refunded</option>
-        </Select>
-      </HStack>
+    <Box maxW="100%">
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
+        <Box>
+          <Heading size="lg" fontWeight="bold" letterSpacing="tight" mb={1}>Orders</Heading>
+          <Text color="gray.500" fontSize="sm">Track and manage customer orders</Text>
+        </Box>
+        <HStack spacing={3}>
+          <InputGroup maxW="250px">
+            <InputLeftElement pointerEvents="none" children={<SearchIcon color="gray.400" />} />
+            <Input
+              bg="white"
+              placeholder="Search by Order ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && loadOrders(1)}
+              borderRadius="md"
+              borderColor="gray.300"
+            />
+          </InputGroup>
+          <Select
+            bg="white"
+            maxW="150px"
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+            borderRadius="md"
+            borderColor="gray.300"
+          >
+            <option value="">All Payments</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="failed">Failed</option>
+            <option value="refunded">Refunded</option>
+          </Select>
+          <Button variant="outline" borderColor="gray.300" color="gray.600" bg="white" onClick={() => loadOrders(1)}>
+            Search
+          </Button>
+        </HStack>
+      </Box>
 
       {loading ? (
         <Center h="40vh">
           <Spinner size="xl" />
         </Center>
       ) : (
-        <Box borderWidth="1px" borderRadius="lg" overflowX="auto">
-          <Table size="sm">
-            <Thead bg="gray.50">
-              <Tr>
-                <Th>Order ID</Th>
-                <Th>Customer</Th>
-                <Th>Products</Th>
-                <Th>Total</Th>
-                <Th>Payment</Th>
-                <Th>Status</Th>
-                <Th>Action</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
+        <Box bg="white" p={0} borderRadius="lg" borderWidth="1px" borderColor="gray.200" overflow="hidden">
+          <Box overflowX="auto">
+            <Table variant="simple" size="md">
+              <Thead bg="gray.50">
+                <Tr>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Order ID</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Customer</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Products</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Total</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Payment</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Status</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider" textAlign="right">Action</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
               {orders.map((order) => (
-                <Tr key={order._id}>
+                <Tr key={order._id} _hover={{ bg: "gray.50" }}>
                   <Td>
-                    <Text fontWeight="bold">{order.orderId}</Text>
+                    <Text fontWeight="medium" color="black">{order.orderId}</Text>
                     <Text fontSize="xs" color="gray.500">
-                      {new Date(order.createdAt).toLocaleString("en-IN")}
+                      {new Date(order.createdAt).toLocaleDateString("en-IN")}
                     </Text>
                   </Td>
 
                   <Td>
-                    <Text fontWeight="bold">
+                    <Text fontWeight="medium" color="black">
                       {order.shippingInfo?.name}
                     </Text>
-                    <Text fontSize="xs">
+                    <Text fontSize="xs" color="gray.600">
                       {order.shippingInfo?.mobile}
                     </Text>
                     <Text fontSize="xs" color="gray.500">
@@ -178,20 +185,22 @@ const AdminOrders = () => {
                     </Text>
                   </Td>
 
-                  <Td>
+                  <Td color="gray.600">
                     {order.items.map((item, i) => (
                       <Text key={i} fontSize="xs">
-                        {item.product?.name} (x{item.quantity})
+                        {item.product?.name} <Text as="span" color="gray.400">(x{item.quantity})</Text>
                       </Text>
                     ))}
                   </Td>
 
-                  <Td fontWeight="bold">
+                  <Td fontWeight="medium" color="black">
                     ₹{order.totalAmount}
                   </Td>
 
                   <Td>
                     <Badge
+                      borderRadius="full"
+                      px="2"
                       colorScheme={
                         order.paymentStatus === "paid"
                           ? "green"
@@ -204,7 +213,10 @@ const AdminOrders = () => {
 
                   <Td>
                     <Select
-                      size="xs"
+                      size="sm"
+                      width="130px"
+                      borderColor="gray.200"
+                      bg="white"
                       value={order.orderStatus}
                       onChange={(e) =>
                         handleStatusChange(order._id, e.target.value)
@@ -218,9 +230,13 @@ const AdminOrders = () => {
                     </Select>
                   </Td>
 
-                  <Td>
+                  <Td textAlign="right">
                     <Button
-                      size="xs"
+                      size="sm"
+                      variant="outline"
+                      borderColor="gray.300"
+                      color="gray.600"
+                      _hover={{ bg: "gray.50" }}
                       onClick={() => {
                         setSelectedOrder(order);
                         onOpen();
@@ -233,13 +249,16 @@ const AdminOrders = () => {
               ))}
             </Tbody>
           </Table>
+          </Box>
         </Box>
       )}
 
       {/* Pagination */}
-      <HStack justify="center" mt={6}>
+      <HStack justify="space-between" mt={4} px={1}>
         <Button
           size="sm"
+          variant="outline"
+          borderColor="gray.300"
           onClick={() =>
             loadOrders(pagination.currentPage - 1)
           }
@@ -248,12 +267,14 @@ const AdminOrders = () => {
           Prev
         </Button>
 
-        <Text fontSize="sm">
+        <Text fontSize="sm" color="gray.500">
           Page {pagination.currentPage} of {pagination.totalPages}
         </Text>
 
         <Button
           size="sm"
+          variant="outline"
+          borderColor="gray.300"
           onClick={() =>
             loadOrders(pagination.currentPage + 1)
           }
@@ -336,7 +357,7 @@ const AdminOrders = () => {
           </ModalBody>
         </ModalContent>
       </Modal>
-    </Container>
+    </Box>
   );
 };
 

@@ -1,84 +1,56 @@
 // Header.js
-
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Box, Flex, IconButton, Drawer, Text, DrawerOverlay, DrawerContent, DrawerCloseButton, DrawerHeader, DrawerBody, VStack, HStack, Divider } from '@chakra-ui/react';
-import { HamburgerIcon, Search2Icon } from '@chakra-ui/icons';
-import { FaUser, FaShoppingCart } from 'react-icons/fa';
-
-import logo from './logo.png'
+import { Box, Flex, IconButton, Menu, MenuButton, MenuList, MenuItem } from '@chakra-ui/react';
+import { FaUser } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { logout } from '../actions/apiActions';
 
 const Header = () => {
-  const [isOpen, setIsOpen] = React.useState(false);
   const navigate = useNavigate();
-  const handleToggle = () => setIsOpen(!isOpen);
+  const isLoggedIn = !!localStorage.getItem("token");
+
   const handleLogout = async () => {
     localStorage.clear();
-    const response = await logout();
-    navigate('/');
-  }
+    await logout();
+    window.location.href = "/";
+  };
+
   return (
     <Flex
-      color="white"
-      // p={4}
-      // pl={200}
-      // pr={200}
+      bg="white"
+      borderBottom="1px solid"
+      borderColor="gray.200"
       p={4}
-      pl={[0, 0, 10, 200]} // Responsive padding: 0px on mobile, 200px on desktop
-      pr={[0, 0, 10, 200]} // Responsive padding: 0px on mobile, 200px on desktop
-      height="100px"
+      height="70px"
       align="center"
       justifyContent="space-between"
+      position="sticky"
+      top="0"
+      zIndex="10"
     >
-      <HStack spacing={4}>
-        <IconButton icon={<HamburgerIcon fontSize="2xl" />} variant="ghost" onClick={handleToggle} />
+      {/* Left Area Empty */}
+      <Box></Box>
 
-        {/* Sidebar Drawer */}
-        <Drawer placement="left" onClose={handleToggle} isOpen={isOpen}>
-          <DrawerOverlay>
-            <DrawerContent>
-              <DrawerCloseButton />
-              <DrawerHeader>Login</DrawerHeader>
-              <Divider />
-              <DrawerBody>
-                {/* Add your sidebar content here */}
-                <VStack align='left' fontFamily='sans-serif' spacing={4}>
-                  {/* Your sidebar items go here */}
-                  <Text><Link to="/dashboard">Dashboard</Link></Text>
-                  <Divider />
-                  <Text><Link to="/category">Categories</Link></Text>
-                  <Divider />
-                  <Text><Link to="/subcategory">Sub Categories</Link></Text>
-                  <Divider />
-                  <Text><Link to="/products">Products</Link></Text>
-                  <Divider />
-                  <Text><Link to="/orders">Orders</Link></Text>
-                  <Divider />
-                  <Text><Link to="/users">Users</Link></Text>
-                  <Divider />
-                  <Text onClick={handleLogout} cursor={'pointer'}>Logout</Text>
-                  <Divider />
-                  <Text><Link to="/">VISIT STORE</Link></Text>
-                  <Divider />
-                </VStack>
-              </DrawerBody>
-            </DrawerContent>
-          </DrawerOverlay>
-        </Drawer>
-      </HStack>
+      {/* Center Logo Removed */}
+      <Box></Box>
 
-
-      {/* Center (Logo) */}
-      <Box align="center" color="black" >
-        {/* <img src={logo} height={'50%'} width={'50%'}></img> */}
-        KP CIRCUIT CITY
-      </Box>
-
-      <Box display={'flex'}>
-        <IconButton icon={<Search2Icon fontSize="xl" />} variant="ghost" />
-        <IconButton icon={<FaUser fontSize="2xl" />} variant="ghost" />
-        <IconButton icon={<FaShoppingCart fontSize="2xl" />} variant="ghost" />
+      {/* Right Icons */}
+      <Box display="flex">
+        <Menu>
+          <MenuButton
+            as={IconButton}
+            icon={<FaUser fontSize="xl" />}
+            variant="ghost"
+            aria-label="Profile"
+            isDisabled={!isLoggedIn}
+            _hover={{ bg: "gray.100" }}
+          />
+          <MenuList>
+            <MenuItem color="red.500" fontWeight="bold" onClick={handleLogout}>
+              Logout
+            </MenuItem>
+          </MenuList>
+        </Menu>
       </Box>
     </Flex>
   );

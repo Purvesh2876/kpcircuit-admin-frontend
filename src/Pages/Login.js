@@ -24,6 +24,11 @@ const Login = ({ onLogin }) => {
           isClosable: true,
         });
         localStorage.setItem('token', response.token);
+        if (response.user) {
+          localStorage.setItem('adminName', response.user.name);
+          localStorage.setItem('adminEmail', response.user.email);
+        }
+        if(onLogin) onLogin(true);
         navigate('/dashboard');
       } else {
         console.error('Login failed');

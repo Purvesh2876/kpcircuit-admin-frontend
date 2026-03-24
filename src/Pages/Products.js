@@ -97,6 +97,9 @@ const ProductManagement = () => {
     price: "",
     stock: "",
     featured: false,
+    isReturnable: true,
+    isReplaceable: true,
+    returnWindowDays: 7,
   });
 
   /* ---------------- FETCH ---------------- */
@@ -150,6 +153,9 @@ const ProductManagement = () => {
       price: "",
       stock: "",
       featured: false,
+      isReturnable: true,
+      isReplaceable: true,
+      returnWindowDays: 7,
     });
     setExistingImages([]); // Reset images
     setNewImages([]); // Reset images
@@ -167,6 +173,9 @@ const ProductManagement = () => {
       description: product.description,
       price: product.price,
       featured: product.featured,
+      isReturnable: product.isReturnable ?? true,
+      isReplaceable: product.isReplaceable ?? true,
+      returnWindowDays: product.returnWindowDays ?? 7,
     });
 
     // Set existing images from the product object
@@ -278,63 +287,91 @@ const ProductManagement = () => {
   /* ---------------- UI ---------------- */
 
   return (
-    <Box p={4}>
-      <Box display="flex" justifyContent="space-between" mb={4}>
-        <Heading>Product Management</Heading>
-        <Button colorScheme="purple" onClick={openAddModal}>
-          + Add Product
+    <Box maxW="100%">
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
+        <Box>
+          <Heading size="lg" fontWeight="bold" letterSpacing="tight" mb={1}>Products</Heading>
+          <Text color="gray.500" fontSize="sm">Manage your inventory and catalog</Text>
+        </Box>
+        <Button bg="black" color="white" _hover={{ bg: "gray.800" }} onClick={openAddModal} leftIcon={<Text fontSize="xl" mb={1}>+</Text>}>
+          Create Product
         </Button>
       </Box>
 
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            <Th>Name</Th>
-            <Th>Image</Th>
-            <Th>Category</Th>
-            <Th>Price</Th>
-            <Th>Stock</Th>
-            <Th>Actions</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {products.map((p) => (
-            <Tr key={p._id}>
-              <Td>{p.name}</Td>
-              <Td>
-                {p.images && p.images[0] && (
-                  <Image
-                    // Fallback to localhost if ENV not set, change as needed
-                    src={`/uploads${p.images[0]}`} // ${process.env.REACT_APP_API_URL || 'http://76.13.247.39:5000/'}
-                    boxSize="50px"
-                    objectFit="cover"
-                  />
-                )}
-              </Td>
-              <Td>{p.category?.name}</Td>
-              <Td>₹{p.price}</Td>
-              <Td>{p.stock}</Td>
-              <Td>
-                <ButtonGroup size="sm">
-                  <Button onClick={() => openEditModal(p)}>
-                    <EditIcon />
-                  </Button>
-                  <Button onClick={() => openStockModal(p)} colorScheme="blue">
-                    + Stock
-                  </Button>
-                  {/* 🔥 ADD THIS */}
-                  <Button colorScheme="purple" onClick={() => openHistoryModal(p)}>
-                    History
-                  </Button>
-                  <Button colorScheme="red" onClick={() => handleDelete(p._id)}>
-                    <DeleteIcon />
-                  </Button>
-                </ButtonGroup>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
+      <Box bg="white" p={0} borderRadius="lg" borderWidth="1px" borderColor="gray.200" overflow="hidden">
+        <Box overflowX="auto">
+          <Table variant="simple" size="md">
+            <Thead>
+              <Tr>
+                <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Name</Th>
+                <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Image</Th>
+                <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Category</Th>
+                <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Price</Th>
+                <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Stock</Th>
+                <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider" textAlign="right">Actions</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {products.map((p) => (
+                <Tr key={p._id} _hover={{ bg: "gray.50" }}>
+                  <Td fontWeight="medium" color="black">{p.name}</Td>
+                  <Td>
+                    {p.images && p.images[0] && (
+                      <Image
+                        src={`/uploads${p.images[0]}`}
+                        boxSize="40px"
+                        borderRadius="md"
+                        objectFit="cover"
+                      />
+                    )}
+                  </Td>
+                  <Td color="gray.600">{p.category?.name}</Td>
+                  <Td color="gray.600">₹{p.price}</Td>
+                  <Td color="gray.600">{p.stock}</Td>
+                  <Td textAlign="right">
+                    <ButtonGroup size="sm" variant="ghost" spacing={1}>
+                      <IconButton
+                        icon={<EditIcon />}
+                        aria-label="Edit"
+                        color="gray.500"
+                        _hover={{ color: "black", bg: "gray.100" }}
+                        onClick={() => openEditModal(p)}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        borderColor="gray.300"
+                        color="gray.600"
+                        _hover={{ bg: "gray.50" }}
+                        onClick={() => openStockModal(p)}
+                      >
+                        + Stock
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        borderColor="gray.300"
+                        color="gray.600"
+                        _hover={{ bg: "gray.50" }}
+                        onClick={() => openHistoryModal(p)}
+                      >
+                        History
+                      </Button>
+                      <IconButton
+                        icon={<DeleteIcon />}
+                        aria-label="Delete"
+                        color="gray.500"
+                        _hover={{ color: "red.500", bg: "red.50" }}
+                        onClick={() => handleDelete(p._id)}
+                      />
+                    </ButtonGroup>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Box>
+      </Box>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} size="xl" isCentered>
         <ModalOverlay backdropFilter="blur(4px)" />
@@ -467,6 +504,50 @@ const ProductManagement = () => {
                   Featured Product
                 </Checkbox>
 
+                {/* -------- RETURN POLICY -------- */}
+                <SimpleGrid columns={[1, 3]} spacing={3} mt={2}>
+                  <Checkbox
+                    size="sm"
+                    isChecked={formData.isReturnable}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        isReturnable: e.target.checked,
+                      })
+                    }
+                  >
+                    Allow Refund
+                  </Checkbox>
+
+                  <Checkbox
+                    size="sm"
+                    isChecked={formData.isReplaceable}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        isReplaceable: e.target.checked,
+                      })
+                    }
+                  >
+                    Allow Replacement
+                  </Checkbox>
+
+                  <FormControl size="sm">
+                    <FormLabel fontSize="xs">Return Window (Days)</FormLabel>
+                    <Input
+                      size="sm"
+                      type="number"
+                      value={formData.returnWindowDays}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          returnWindowDays: e.target.value,
+                        })
+                      }
+                    />
+                  </FormControl>
+                </SimpleGrid>
+
                 {/* -------- IMAGES -------- */}
                 <FormControl>
                   <FormLabel fontSize="sm">Images</FormLabel>
@@ -572,7 +653,8 @@ const ProductManagement = () => {
           <ModalCloseButton />
 
           <ModalBody>
-            <Table size="sm">
+            <Box overflowX="auto" overflowY="auto" maxH="60vh">
+              <Table size="sm">
               <Thead>
                 <Tr>
                   <Th>Date</Th>
@@ -599,12 +681,13 @@ const ProductManagement = () => {
                 ))}
               </Tbody>
             </Table>
+            </Box>
 
             {/* Pagination */}
             <Box display="flex" justifyContent="space-between" mt={4}>
               <Button
                 size="sm"
-                disabled={historyPage === 1}
+                isDisabled={historyPage <= 1}
                 onClick={() => openHistoryModal(historyProduct, historyPage - 1)}
               >
                 Prev
@@ -616,7 +699,7 @@ const ProductManagement = () => {
 
               <Button
                 size="sm"
-                disabled={historyPage === historyTotalPages}
+                isDisabled={historyPage >= historyTotalPages || historyTotalPages === 0}
                 onClick={() => openHistoryModal(historyProduct, historyPage + 1)}
               >
                 Next

@@ -132,84 +132,99 @@ const Category = () => {
   };
 
   return (
-    <Box p={8} bg={pageBg} minH="100vh">
+    <Box maxW="100%">
       {/* Header */}
-      <Flex justify="space-between" align="center" mb={8}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
         <Box>
-          <Heading size="lg">Category Management</Heading>
+          <Heading size="lg" fontWeight="bold" letterSpacing="tight" mb={1}>Categories</Heading>
           <Text color="gray.500" fontSize="sm">
-            Manage and organize your product categories
+            Manage and organize your product catalog structure
           </Text>
         </Box>
 
         <Button
-          leftIcon={<AddIcon />}
-          colorScheme="purple"
-          borderRadius="xl"
+          bg="black"
+          color="white"
+          _hover={{ bg: "gray.800" }}
+          leftIcon={<Text fontSize="xl" mb={1}>+</Text>}
           onClick={() => {
             resetForm();
             setIsAddOpen(true);
           }}
         >
-          Add Category
+          Create Category
         </Button>
-      </Flex>
+      </Box>
 
       {/* Table Container */}
       <Box
-        bg={cardBg}
-        borderRadius="2xl"
-        boxShadow="sm"
-        border="1px solid"
-        borderColor={borderColor}
+        bg="white"
+        borderRadius="lg"
+        borderWidth="1px"
+        borderColor="gray.200"
         overflow="hidden"
       >
         {loading ? (
           <Flex justify="center" align="center" p={10}>
-            <Spinner size="lg" />
+            <Spinner size="xl" />
           </Flex>
         ) : categories.length === 0 ? (
           <Flex justify="center" align="center" p={10}>
             <Text color="gray.500">No categories found.</Text>
           </Flex>
         ) : (
-          <Table variant="simple">
-            <Thead bg={theadbg}>
-              <Tr>
-                <Th>#</Th>
-                <Th>Name</Th>
-                <Th>Image</Th>
-                <Th textAlign="center">Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {categories.map((cat, i) => (
-                <Tr key={cat._id} _hover={{ bg: "gray.50" }}>
-                  <Td>{i + 1}</Td>
-                  <Td fontWeight="medium">{cat.name}</Td>
-                  <Td>
-                    <Image
-                      src={`/uploads${cat.image}`} // ${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"}
-                      boxSize="55px"
-                      objectFit="cover"
-                      borderRadius="lg"
-                      border="1px solid #eee"
-                    />
-                  </Td>
-                  <Td textAlign="center">
-                    <ButtonGroup size="sm" variant="ghost">
-                      <Button onClick={() => openEdit(cat)}>
-                        <EditIcon />
-                      </Button>
-                      <Button colorScheme="red" onClick={() => handleDelete(cat._id)}>
-                        <DeleteIcon />
-                      </Button>
-                    </ButtonGroup>
-                  </Td>
+          <Box overflowX="auto">
+            <Table variant="simple" size="md">
+              <Thead bg="gray.50">
+                <Tr>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">#</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Name</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Image</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider" textAlign="right">Actions</Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
+              </Thead>
+              <Tbody>
+                {categories.map((cat, i) => (
+                  <Tr key={cat._id} _hover={{ bg: "gray.50" }}>
+                    <Td color="gray.500">{i + 1}</Td>
+                    <Td fontWeight="medium" color="black">{cat.name}</Td>
+                    <Td>
+                      <Image
+                        src={`/uploads${cat.image}`} // ${process.env.REACT_APP_API_URL || "http://76.13.247.39:5000/"}
+                        boxSize="40px"
+                        objectFit="cover"
+                        borderRadius="md"
+                      />
+                    </Td>
+                    <Td textAlign="right">
+                      <ButtonGroup size="sm" variant="ghost" spacing={1}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          borderColor="gray.300"
+                          color="gray.600"
+                          _hover={{ bg: "gray.50" }}
+                          onClick={() => openEdit(cat)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          borderColor="gray.300"
+                          color="gray.600"
+                          _hover={{ color: "red.500", bg: "red.50" }}
+                          onClick={() => handleDelete(cat._id)}
+                        >
+                          Delete
+                        </Button>
+                      </ButtonGroup>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
         )}
       </Box>
 

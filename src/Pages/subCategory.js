@@ -132,95 +132,110 @@ const SubCategory = () => {
   };
 
   return (
-    <Box p={8} bg={pageBg} minH="100vh">
+    <Box maxW="100%">
       {/* ---------- Header ---------- */}
-      <Flex justify="space-between" align="center" mb={8}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
         <Box>
-          <Heading size="lg">SubCategory Management</Heading>
+          <Heading size="lg" fontWeight="bold" letterSpacing="tight" mb={1}>Subcategories</Heading>
           <Text fontSize="sm" color="gray.500">
             Organize your subcategories efficiently
           </Text>
         </Box>
 
         <Button
-          leftIcon={<AddIcon />}
-          colorScheme="purple"
-          borderRadius="xl"
+          bg="black"
+          color="white"
+          _hover={{ bg: "gray.800" }}
+          leftIcon={<Text fontSize="xl" mb={1}>+</Text>}
           onClick={openAddModal}
         >
-          Add SubCategory
+          Create Subcategory
         </Button>
-      </Flex>
+      </Box>
 
       {/* ---------- Table Container ---------- */}
       <Box
-        bg={cardBg}
-        borderRadius="2xl"
-        border="1px solid"
-        borderColor={borderColor}
-        boxShadow="sm"
+        bg="white"
+        borderRadius="lg"
+        borderWidth="1px"
+        borderColor="gray.200"
         overflow="hidden"
       >
         {loading ? (
           <Flex justify="center" align="center" p={10}>
-            <Spinner size="lg" />
+            <Spinner size="xl" />
           </Flex>
         ) : subCategories.length === 0 ? (
           <Flex justify="center" align="center" p={10}>
             <Text color="gray.500">No subcategories found.</Text>
           </Flex>
         ) : (
-          <Table variant="simple">
-            <Thead bg={tableHeadBg}>
-              <Tr>
-                <Th>#</Th>
-                <Th>Name</Th>
-                <Th>Image</Th>
-                <Th>Category</Th>
-                <Th>Description</Th>
-                <Th textAlign="center">Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {subCategories.map((sub, index) => (
-                <Tr key={sub._id} _hover={{ bg: rowHoverBg }}>
-                  <Td>{index + 1}</Td>
-                  <Td fontWeight="medium">{sub.name}</Td>
-                  <Td>
-                    {sub.image ? (
-                      <img
-                        src={`/uploads${sub.image}`} // ${process.env.REACT_APP_API_URL}
-                        alt={sub.name}
-                        style={{
-                          width: 70,
-                          height: 45,
-                          objectFit: "cover",
-                          borderRadius: "8px",
-                          border: "1px solid #eee",
-                        }}
-                      />
-                    ) : (
-                      "-"
-                    )}
-                  </Td>
-                  <Td>{sub.category?.name}</Td>
-                  <Td maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-                    {sub.description || "-"}
-                  </Td>
-                  <Td textAlign="center">
-                    <ButtonGroup size="sm" variant="ghost">
-                      <Button onClick={() => openEditModal(sub)}>
-                        <EditIcon />
-                      </Button>
-                      <Button colorScheme="red" onClick={() => handleDelete(sub._id)}>
-                        <DeleteIcon />
-                      </Button>
-                    </ButtonGroup>
-                  </Td>
+          <Box overflowX="auto">
+            <Table variant="simple" size="md">
+              <Thead bg="gray.50">
+                <Tr>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">#</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Name</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Image</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Category</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Description</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider" textAlign="right">Actions</Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
+              </Thead>
+              <Tbody>
+                {subCategories.map((sub, index) => (
+                  <Tr key={sub._id} _hover={{ bg: "gray.50" }}>
+                    <Td color="gray.500">{index + 1}</Td>
+                    <Td fontWeight="medium" color="black">{sub.name}</Td>
+                    <Td>
+                      {sub.image ? (
+                        <img
+                          src={`/uploads${sub.image}`} // ${process.env.REACT_APP_API_URL}
+                          alt={sub.name}
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            objectFit: "cover",
+                            borderRadius: "6px",
+                          }}
+                        />
+                      ) : (
+                        "-"
+                      )}
+                    </Td>
+                    <Td color="gray.600">{sub.category?.name}</Td>
+                    <Td maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis" color="gray.600">
+                      {sub.description || "-"}
+                    </Td>
+                    <Td textAlign="right">
+                      <ButtonGroup size="sm" variant="ghost" spacing={1}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          borderColor="gray.300"
+                          color="gray.600"
+                          _hover={{ bg: "gray.50" }}
+                          onClick={() => openEditModal(sub)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          borderColor="gray.300"
+                          color="gray.600"
+                          _hover={{ color: "red.500", bg: "red.50" }}
+                          onClick={() => handleDelete(sub._id)}
+                        >
+                          Delete
+                        </Button>
+                      </ButtonGroup>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
         )}
       </Box>
 

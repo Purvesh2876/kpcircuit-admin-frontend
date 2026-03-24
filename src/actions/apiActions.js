@@ -202,3 +202,64 @@ export const getInventoryLogs = async (productId, page = 1, limit = 10) => {
         throw error;
     }
 };
+
+/* ================= RETURNS ================= */
+export const getAllReturnRequests = async () => {
+    try {
+        const response = await instance.get("/returns/admin/all");
+        return response.data;
+    } catch (error) {
+        console.error("Fetch all return requests error:", error);
+        throw error;
+    }
+};
+
+export const getReturnRequestDetails = async (id) => {
+    try {
+        const response = await instance.get(`/returns/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Fetch return request details error:", error);
+        throw error;
+    }
+};
+
+export const updateReturnRequestStatus = async (id, status) => {
+    try {
+        const response = await instance.put(`/returns/admin/status/${id}`, { status });
+        return response.data;
+    } catch (error) {
+        console.error("Update return status error:", error);
+        throw error;
+    }
+};
+
+export const processReturnRequest = async (id) => {
+    try {
+        const response = await instance.put(`/returns/admin/process/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Process return error:", error);
+        throw error;
+    }
+};
+
+export const processRefund = async (id) => {
+    try {
+        const response = await instance.put(`/returns/admin/refund/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Process refund error:", error);
+        throw error;
+    }
+};
+
+export const createReplacementOrder = async (id) => {
+    try {
+        const response = await instance.post(`/returns/admin/replacement/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Create replacement order error:", error);
+        throw error;
+    }
+};
