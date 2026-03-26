@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Table,
@@ -28,6 +28,12 @@ import {
   useDisclosure,
   Text,
   Divider,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import {
@@ -49,6 +55,16 @@ const AdminOrders = () => {
   });
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+  
+  // 🚀 Disclosure for Confirmation
+  const { 
+    isOpen: isConfirmOpen, 
+    onOpen: onConfirmOpen, 
+    onClose: onConfirmClose 
+  } = useDisclosure();
+  
+  const [pendingStatus, setPendingStatus] = useState({ id: null, status: "", isPaid: false });
+  const cancelRef = useRef();
 
   const loadOrders = async (page = 1) => {
     setLoading(true);
@@ -57,8 +73,6 @@ const AdminOrders = () => {
       const filters = {
         search: search || undefined,
         paymentStatus: paymentStatus || undefined,
-        // startDate: startDate || undefined,
-        // endDate: endDate || undefined,
       };
 
       const { data } = await getAdminAllOrders(page, 10, filters);
@@ -79,8 +93,26 @@ const AdminOrders = () => {
   }, [paymentStatus]);
 
   const handleStatusChange = async (id, newStatus) => {
+    // If status is cancelled, we MUST ask for confirmation
+    if (newStatus === "cancelled") {
+      const orderToCancel = orders.find(o => o._id === id);
+      setPendingStatus({ id, status: newStatus, isPaid: orderToCancel?.paymentStatus === "paid" });
+      onConfirmOpen();
+      return;
+    }
+
     try {
       await updateOrderStatus(id, { status: newStatus });
+      loadOrders(pagination.currentPage);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const confirmStatusUpdate = async () => {
+    try {
+      await updateOrderStatus(pendingStatus.id, { status: pendingStatus.status });
+      onConfirmClose();
       loadOrders(pagination.currentPage);
     } catch (err) {
       console.error(err);
@@ -99,6 +131,12 @@ const AdminOrders = () => {
         return "green";
       case "cancelled":
         return "red";
+      case "refunded":
+        return "purple";
+      case "returned":
+        return "teal";
+      case "replaced":
+        return "cyan";
       default:
         return "gray";
     }
@@ -143,6 +181,45 @@ const AdminOrders = () => {
           </Button>
         </HStack>
       </Box>
+
+      {/* 🚀 Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isConfirmOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onConfirmClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Cancel Order
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure you want to cancel this order?
+              {pendingStatus.isPaid && (
+                <Box mt={3} p={3} bg="red.50" borderRadius="md" borderLeft="4px solid" borderColor="red.500">
+                  <Text color="red.700" fontWeight="bold" fontSize="sm">
+                    ⚠️ ATTENTION:
+                  </Text>
+                  <Text color="red.600" fontSize="xs">
+                    This order is **PAID**. Cancelling will automatically initiate a 
+                    **Razorpay Refund** and restock the items.
+                  </Text>
+                </Box>
+              )}
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onConfirmClose}>
+                No, Keep Order
+              </Button>
+              <Button colorScheme="red" onClick={confirmStatusUpdate} ml={3}>
+                Yes, Cancel {pendingStatus.isPaid ? "& Refund" : ""}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
 
       {loading ? (
         <Center h="40vh">
@@ -227,6 +304,9 @@ const AdminOrders = () => {
                       <option value="shipped">Shipped</option>
                       <option value="delivered">Delivered</option>
                       <option value="cancelled">Cancelled</option>
+                      <option value="refunded">Refunded</option>
+                      <option value="returned">Returned</option>
+                      <option value="replaced">Replaced</option>
                     </Select>
                   </Td>
 
@@ -321,12 +401,8 @@ const AdminOrders = () => {
 
                 <Divider />
 
-                <Text fontWeight="bold">
-                  Total: ₹{selectedOrder.totalAmount}
-                </Text>
+                <Text fontWeight="bold" mb={3}>Status History</Text>
                 <Box>
-                  <Text fontWeight="bold" mb={3}>Status History</Text>
-
                   {selectedOrder.statusHistory?.map((entry, index) => (
                     <HStack
                       key={index}
@@ -351,7 +427,6 @@ const AdminOrders = () => {
                     </HStack>
                   ))}
                 </Box>
-
               </VStack>
             )}
           </ModalBody>

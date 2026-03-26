@@ -16,7 +16,8 @@ import {
   FiLayers,
   FiShoppingCart,
   FiAlertCircle,
-  FiPackage
+  FiPackage,
+  FiRefreshCw
 } from 'react-icons/fi';
 import { fetchDashboardStats } from '../actions/apiActions';
 
@@ -108,6 +109,7 @@ const Dashboard = () => {
             <StatCard title="Sub Categories" value={data.subCategories} icon={FiLayers} accent="teal" />
             <StatCard title="Total Orders" value={data.totalOrders} icon={FiShoppingCart} accent="orange" />
             <StatCard title="Pending Orders" value={data.pendingOrders} icon={FiAlertCircle} accent="red" />
+            <StatCard title="Pending Returns" value={data.pendingReturns} icon={FiRefreshCw} accent="yellow" />
             <StatCard title="Out Of Stock" value={data.outOfStock} icon={FiPackage} accent="pink" />
           </SimpleGrid>
 
@@ -122,7 +124,8 @@ const Dashboard = () => {
                 { label: "Manage Categories", path: "/category" },
                 { label: "Manage Products", path: "/products" },
                 { label: "Manage Users", path: "/users" },
-                { label: "View Orders", path: "/orders" }
+                { label: "View Orders", path: "/orders" },
+                { label: "Manage Returns", path: "/returns" }
               ].map((item, index) => (
                 <Link key={index} to={item.path}>
                   <Box

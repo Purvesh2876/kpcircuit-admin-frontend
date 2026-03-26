@@ -1,21 +1,28 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { 
-    useToast, 
-    Center, 
-    Spinner, 
-    Text, 
-    Container, 
-    VStack, 
-    Flex, 
-    Heading, 
-    Badge, 
-    SimpleGrid, 
-    Divider, 
-    HStack, 
-    Image, 
-    Box, 
-    Button 
+import {
+    useToast,
+    Center,
+    Spinner,
+    Text,
+    Container,
+    VStack,
+    Flex,
+    Heading,
+    Badge,
+    SimpleGrid,
+    Divider,
+    HStack,
+    Image,
+    Box,
+    Button,
+    useDisclosure,
+    AlertDialog,
+    AlertDialogBody,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogContent,
+    AlertDialogOverlay,
 } from "@chakra-ui/react";
 import { getReturnRequestDetails, updateReturnRequestStatus, processReturnRequest, processRefund, createReplacementOrder } from "../actions/apiActions";
 
@@ -26,6 +33,14 @@ const ReturnRequestDetails = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    // 🚀 New Disclosure for Refund Confirmation
+    const {
+        isOpen: isRefundOpen,
+        onOpen: onRefundOpen,
+        onClose: onRefundClose
+    } = useDisclosure();
+    const cancelRef = useRef();
 
     const fetchRequest = useCallback(async () => {
         setLoading(true);
@@ -105,7 +120,8 @@ const ReturnRequestDetails = () => {
         }
     };
 
-    const handleProcessRefund = async () => {
+    const confirmRefund = async () => {
+        onRefundClose();
         setIsUpdating(true);
         try {
             const res = await processRefund(id);
@@ -181,6 +197,42 @@ const ReturnRequestDetails = () => {
 
     return (
         <Box maxW="100%">
+            {/* Refund Confirmation Dialog */}
+            <AlertDialog
+                isOpen={isRefundOpen}
+                leastDestructiveRef={cancelRef}
+                onClose={onRefundClose}
+            >
+                <AlertDialogOverlay>
+                    <AlertDialogContent>
+                        <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                            Process Refund
+                        </AlertDialogHeader>
+
+                        <AlertDialogBody>
+                            Are you sure you want to refund this request?
+                            <Box mt={3} p={3} bg="red.50" borderRadius="md" borderLeft="4px solid" borderColor="red.500">
+                                <Text color="red.700" fontWeight="bold" fontSize="sm">
+                                    ⚠️ WORLD-CLASS ACTION:
+                                </Text>
+                                <Text color="red.600" fontSize="xs">
+                                    This will automatically initiate a **Razorpay Refund** and send a confirmation email to the customer.
+                                </Text>
+                            </Box>
+                        </AlertDialogBody>
+
+                        <AlertDialogFooter>
+                            <Button ref={cancelRef} onClick={onRefundClose}>
+                                Cancel
+                            </Button>
+                            <Button colorScheme="red" onClick={confirmRefund} ml={3}>
+                                Confirm Refund
+                            </Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialogOverlay>
+            </AlertDialog>
+
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
                 <Box>
                     <Heading size="lg" fontWeight="bold" letterSpacing="tight" mb={1}>Return Request Details</Heading>
@@ -257,11 +309,13 @@ const ReturnRequestDetails = () => {
                         {request.status === 'PICKED' && (
                             <Button colorScheme="purple" onClick={handleProcessReturn} isLoading={isUpdating}>Mark as Received</Button>
                         )}
-                        {request.status === 'RECEIVED' && request.type === 'REFUND' && (
-                            <Button colorScheme="teal" onClick={handleProcessRefund} isLoading={isUpdating}>Process Refund</Button>
-                        )}
-                        {request.status === 'RECEIVED' && request.type === 'REPLACEMENT' && (
-                            <Button colorScheme="cyan" onClick={handleCreateReplacement} isLoading={isUpdating}>Create Replacement</Button>
+                        {request.status === 'RECEIVED' && (
+                            <>
+                                <Button colorScheme="teal" onClick={onRefundOpen} isLoading={isUpdating} mr={2}>Process Refund</Button>
+                                {request.type === 'REPLACEMENT' && (
+                                    <Button colorScheme="cyan" onClick={handleCreateReplacement} isLoading={isUpdating}>Create Replacement</Button>
+                                )}
+                            </>
                         )}
                     </HStack>
                 </Box>

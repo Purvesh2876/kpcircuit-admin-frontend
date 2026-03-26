@@ -65,7 +65,14 @@ const ReturnRequests = () => {
         <Box maxW="100%">
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
                 <Box>
-                    <Heading size="lg" fontWeight="bold" letterSpacing="tight" mb={1}>Return Requests</Heading>
+                    <Box display="flex" alignItems="center" gap={3}>
+                        <Heading size="lg" fontWeight="bold" letterSpacing="tight">Return Requests</Heading>
+                        {requests.filter(r => r.status === "REQUESTED").length > 0 && (
+                            <Badge colorScheme="yellow" fontSize="sm" px={3} py={1} borderRadius="full">
+                                {requests.filter(r => r.status === "REQUESTED").length} Pending
+                            </Badge>
+                        )}
+                    </Box>
                     <Text color="gray.500" fontSize="sm">Manage customer returns and replacements</Text>
                 </Box>
             </Box>
