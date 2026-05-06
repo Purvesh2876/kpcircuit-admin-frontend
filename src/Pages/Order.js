@@ -35,7 +35,12 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useToast,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from "@chakra-ui/react";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 import { SearchIcon } from "@chakra-ui/icons";
 import {
   getAdminAllOrders,
@@ -353,50 +358,64 @@ const AdminOrders = () => {
                   </Td>
 
                   <Td>
-                    <VStack align="start" spacing={2}>
-                      <Badge
-                        borderRadius="full"
-                        px={2}
-                        colorScheme={statusColor(order.orderStatus)}
-                      >
-                        {order.orderStatus.toUpperCase()}
-                      </Badge>
-                      <Select
-                        size="sm"
-                        width="140px"
-                        borderColor="gray.200"
-                        bg="white"
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) handleStatusChange(order._id, e.target.value);
-                        }}
-                        placeholder="Change status..."
-                      >
-                        <option value="accepted">Accepted</option>
-                        <option value="in transit">In Transit</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="refunded">Refunded</option>
-                        <option value="returned">Returned</option>
-                        <option value="replaced">Replaced</option>
-                      </Select>
-                    </VStack>
+                    <Badge
+                      borderRadius="full"
+                      px={2}
+                      colorScheme={statusColor(order.orderStatus)}
+                    >
+                      {order.orderStatus.toUpperCase()}
+                    </Badge>
                   </Td>
 
                   <Td textAlign="right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      borderColor="gray.300"
-                      color="gray.600"
-                      _hover={{ bg: "gray.50" }}
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        onOpen();
-                      }}
-                    >
-                      View
-                    </Button>
+                    <HStack justify="flex-end" spacing={2}>
+                      {["refunded", "returned", "replaced", "cancelled", "delivered"].includes(order.orderStatus) ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          borderColor="gray.200"
+                          color="gray.400"
+                          rightIcon={<ChevronDownIcon />}
+                          isDisabled
+                          cursor="not-allowed"
+                        >
+                          Update
+                        </Button>
+                      ) : (
+                        <Menu>
+                          <MenuButton
+                            as={Button}
+                            size="sm"
+                            variant="outline"
+                            borderColor="gray.300"
+                            color="gray.600"
+                            rightIcon={<ChevronDownIcon />}
+                            _hover={{ bg: "gray.50" }}
+                          >
+                            Update
+                          </MenuButton>
+                          <MenuList minW="150px" fontSize="sm">
+                            <MenuItem onClick={() => handleStatusChange(order._id, "accepted")}>Accepted</MenuItem>
+                            <MenuItem onClick={() => handleStatusChange(order._id, "in transit")}>In Transit</MenuItem>
+                            <MenuItem onClick={() => handleStatusChange(order._id, "delivered")}>Delivered</MenuItem>
+                            <MenuItem onClick={() => handleStatusChange(order._id, "cancelled")} color="red.500">Cancelled</MenuItem>
+                          </MenuList>
+                        </Menu>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        borderColor="gray.300"
+                        color="gray.600"
+                        _hover={{ bg: "gray.50" }}
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          onOpen();
+                        }}
+                      >
+                        View
+                      </Button>
+                    </HStack>
                   </Td>
                 </Tr>
               ))}
