@@ -41,13 +41,13 @@ function App() {
         )}
 
         {/* MAIN CONTENT AREA */}
-        <Box flex="1" h="100vh" overflowY="auto" display="flex" flexDirection="column">
+        <Box flex="1" minW="0" display="flex" flexDirection="column">
 
           {/* HEADER (Visible only when logged in) */}
           {isLoggedIn && <Header />}
 
           {/* PAGE ROUTES */}
-          <Box flex="1" p={isLoggedIn ? 6 : 0}>
+          <Box flex="1" overflowY="auto" p={isLoggedIn ? 6 : 0}>
             <Routes>
               <Route path="/" element={<NoLogin><Login onLogin={handleLogin} /></NoLogin>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

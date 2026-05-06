@@ -25,28 +25,34 @@ import { fetchDashboardStats } from '../actions/apiActions';
 // =======================
 // Reusable Stat Card
 // =======================
-const StatCard = ({ title, value, icon, accent }) => {
+const StatCard = ({ title, value, icon, alert }) => {
+  const isAlert = alert && value > 0;
   return (
     <Box
-      bg="white"
+      bg={isAlert ? "red.50" : "white"}
       p={6}
       borderRadius="lg"
-      border="1px solid"
-      borderColor="gray.200"
+      border="1.5px solid"
+      borderColor={isAlert ? "red.300" : "gray.200"}
       transition="all 0.2s ease"
       _hover={{
-        borderColor: "gray.300",
+        borderColor: isAlert ? "red.400" : "gray.300",
         boxShadow: "sm"
       }}
     >
       <Flex justify="space-between" align="flex-start">
         <Box>
-          <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={1}>
+          <Text fontSize="sm" fontWeight="medium" color={isAlert ? "red.600" : "gray.500"} mb={1}>
             {title}
           </Text>
-          <Heading size="xl" fontWeight="bold" letterSpacing="tight" color="black">
+          <Heading size="xl" fontWeight="bold" letterSpacing="tight" color={isAlert ? "red.600" : "black"}>
             {value ?? 0}
           </Heading>
+          {isAlert && (
+            <Text fontSize="xs" color="red.500" mt={1} fontWeight="500">
+              Needs attention
+            </Text>
+          )}
         </Box>
 
         <Flex
@@ -55,11 +61,11 @@ const StatCard = ({ title, value, icon, accent }) => {
           w="40px"
           h="40px"
           borderRadius="md"
-          bg="gray.50"
+          bg={isAlert ? "red.100" : "gray.50"}
           border="1px solid"
-          borderColor="gray.100"
+          borderColor={isAlert ? "red.200" : "gray.100"}
         >
-          <Icon as={icon} boxSize={5} color="black" />
+          <Icon as={icon} boxSize={5} color={isAlert ? "red.500" : "black"} />
         </Flex>
       </Flex>
     </Box>
@@ -109,7 +115,7 @@ const Dashboard = () => {
             <StatCard title="Sub Categories" value={data.subCategories} icon={FiLayers} accent="teal" />
             <StatCard title="Total Orders" value={data.totalOrders} icon={FiShoppingCart} accent="orange" />
             <StatCard title="Pending Orders" value={data.pendingOrders} icon={FiAlertCircle} accent="red" />
-            <StatCard title="Pending Returns" value={data.pendingReturns} icon={FiRefreshCw} accent="yellow" />
+            <StatCard title="Pending Returns" value={data.pendingReturns} icon={FiRefreshCw} alert />
             <StatCard title="Out Of Stock" value={data.outOfStock} icon={FiPackage} accent="pink" />
           </SimpleGrid>
 

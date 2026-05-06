@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
+  useToast,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import {
@@ -63,8 +64,9 @@ const AdminOrders = () => {
     onClose: onConfirmClose 
   } = useDisclosure();
   
-  const [pendingStatus, setPendingStatus] = useState({ id: null, status: "", isPaid: false });
+  const [pendingStatus, setPendingStatus] = useState({ id: null, status: "", isPaid: false, customerName: "", amount: 0, orderId: "" });
   const cancelRef = useRef();
+  const toast = useToast();
 
   const loadOrders = async (page = 1) => {
     setLoading(true);
@@ -96,7 +98,14 @@ const AdminOrders = () => {
     // If status is cancelled, we MUST ask for confirmation
     if (newStatus === "cancelled") {
       const orderToCancel = orders.find(o => o._id === id);
-      setPendingStatus({ id, status: newStatus, isPaid: orderToCancel?.paymentStatus === "paid" });
+      setPendingStatus({
+        id,
+        status: newStatus,
+        isPaid: orderToCancel?.paymentStatus === "paid",
+        customerName: orderToCancel?.shippingInfo?.name || "Customer",
+        amount: orderToCancel?.totalAmount || 0,
+        orderId: orderToCancel?.orderId || "",
+      });
       onConfirmOpen();
       return;
     }
@@ -111,32 +120,66 @@ const AdminOrders = () => {
 
   const confirmStatusUpdate = async () => {
     try {
-      await updateOrderStatus(pendingStatus.id, { status: pendingStatus.status });
+      const { data } = await updateOrderStatus(pendingStatus.id, { status: pendingStatus.status });
       onConfirmClose();
       loadOrders(pagination.currentPage);
+
+      if (pendingStatus.isPaid) {
+        if (data.refundInitiated) {
+          toast({
+            title: "Order cancelled & refund initiated",
+            description: `₹${pendingStatus.amount} refund has been sent to ${pendingStatus.customerName}. It will reflect in 5–7 business days.`,
+            status: "success",
+            duration: 6000,
+            isClosable: true,
+          });
+        } else if (data.refundError) {
+          toast({
+            title: "Order cancelled — refund failed",
+            description: `Refund for ₹${pendingStatus.amount} could not be processed automatically. Please refund manually via Razorpay Dashboard. Error: ${data.refundError}`,
+            status: "error",
+            duration: 10000,
+            isClosable: true,
+          });
+        }
+      } else {
+        toast({
+          title: "Order cancelled",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
     } catch (err) {
       console.error(err);
+      toast({
+        title: "Failed to cancel order",
+        description: "Something went wrong. Please try again.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
     }
   };
 
   const statusColor = (status) => {
     switch (status) {
-      case "placed":
-        return "gray";
-      case "packed":
+      case "payment confirmed":
         return "orange";
-      case "shipped":
+      case "accepted":
         return "blue";
+      case "in transit":
+        return "purple";
       case "delivered":
         return "green";
       case "cancelled":
         return "red";
       case "refunded":
-        return "purple";
+        return "pink";
       case "returned":
         return "teal";
       case "replaced":
-        return "cyan";
+        return "yellow";
       default:
         return "gray";
     }
@@ -195,26 +238,47 @@ const AdminOrders = () => {
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              Are you sure you want to cancel this order?
-              {pendingStatus.isPaid && (
-                <Box mt={3} p={3} bg="red.50" borderRadius="md" borderLeft="4px solid" borderColor="red.500">
-                  <Text color="red.700" fontWeight="bold" fontSize="sm">
-                    ⚠️ ATTENTION:
-                  </Text>
-                  <Text color="red.600" fontSize="xs">
-                    This order is **PAID**. Cancelling will automatically initiate a 
-                    **Razorpay Refund** and restock the items.
-                  </Text>
+              <VStack align="stretch" spacing={3}>
+                <Box p={3} bg="gray.50" borderRadius="md" borderWidth="1px" borderColor="gray.200">
+                  <HStack justify="space-between">
+                    <Text fontSize="xs" color="gray.500">Customer</Text>
+                    <Text fontSize="sm" fontWeight="semibold">{pendingStatus.customerName}</Text>
+                  </HStack>
+                  <HStack justify="space-between" mt={1}>
+                    <Text fontSize="xs" color="gray.500">Order ID</Text>
+                    <Text fontSize="sm" fontWeight="semibold">{pendingStatus.orderId}</Text>
+                  </HStack>
+                  {pendingStatus.isPaid && (
+                    <HStack justify="space-between" mt={1}>
+                      <Text fontSize="xs" color="gray.500">Refund Amount</Text>
+                      <Text fontSize="sm" fontWeight="bold" color="green.600">₹{pendingStatus.amount}</Text>
+                    </HStack>
+                  )}
                 </Box>
-              )}
+
+                <Text fontSize="sm" color="gray.700">
+                  Are you sure you want to cancel this order? This action cannot be undone.
+                </Text>
+
+                {pendingStatus.isPaid && (
+                  <Box p={3} bg="orange.50" borderRadius="md" borderLeft="4px solid" borderColor="orange.400">
+                    <Text color="orange.800" fontWeight="bold" fontSize="sm" mb={1}>
+                      Paid Order — Refund will be initiated
+                    </Text>
+                    <Text color="orange.700" fontSize="xs">
+                      A Razorpay refund of ₹{pendingStatus.amount} will be automatically sent to {pendingStatus.customerName}. Stock will also be restocked.
+                    </Text>
+                  </Box>
+                )}
+              </VStack>
             </AlertDialogBody>
 
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onConfirmClose}>
-                No, Keep Order
+              <Button ref={cancelRef} onClick={onConfirmClose} variant="outline">
+                Keep Order
               </Button>
               <Button colorScheme="red" onClick={confirmStatusUpdate} ml={3}>
-                Yes, Cancel {pendingStatus.isPaid ? "& Refund" : ""}
+                {pendingStatus.isPaid ? "Cancel & Refund ₹" + pendingStatus.amount : "Cancel Order"}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -299,9 +363,12 @@ const AdminOrders = () => {
                         handleStatusChange(order._id, e.target.value)
                       }
                     >
-                      <option value="placed">Placed</option>
-                      <option value="packed">Packed</option>
-                      <option value="shipped">Shipped</option>
+                      <option value="pending" disabled>Pending (system)</option>
+                      <option value="payment confirmed" disabled>Payment Confirmed (system)</option>
+                      <option value="packed" disabled>Packed (legacy)</option>
+                      <option value="shipped" disabled>Shipped (legacy)</option>
+                      <option value="accepted">Accepted</option>
+                      <option value="in transit">In Transit</option>
                       <option value="delivered">Delivered</option>
                       <option value="cancelled">Cancelled</option>
                       <option value="refunded">Refunded</option>

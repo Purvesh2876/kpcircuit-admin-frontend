@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Box,
@@ -24,7 +24,7 @@ import {
   MdApps,
   MdUnfoldMore,
 } from "react-icons/md";
-import { logout } from "../actions/apiActions";
+import { logout, fetchDashboardStats } from "../actions/apiActions";
 import { useNavigate } from "react-router-dom";
 
 const SIDEBAR_ITEMS = [
@@ -40,6 +40,17 @@ const SIDEBAR_ITEMS = [
 const Sidebar = ({ isCollapsed, onToggle }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [pendingReturns, setPendingReturns] = useState(0);
+
+  useEffect(() => {
+    const loadCount = async () => {
+      try {
+        const res = await fetchDashboardStats();
+        setPendingReturns(res.data?.pendingReturns || 0);
+      } catch { }
+    };
+    loadCount();
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     localStorage.clear();
@@ -123,6 +134,9 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
         {SIDEBAR_ITEMS.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
 
+          const isReturns = item.path === "/returns";
+          const showBadge = isReturns && pendingReturns > 0;
+
           const LinkBox = (
             <Flex
               as={Link}
@@ -134,25 +148,63 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
               borderRadius="md"
               bg={isActive ? "gray.100" : "transparent"}
               color={isActive ? "black" : "gray.600"}
-              _hover={{
-                bg: "gray.100",
-                color: "black",
-              }}
+              _hover={{ bg: "gray.100", color: "black" }}
               transition="all 0.2s"
               cursor="pointer"
               role="group"
+              position="relative"
             >
-              <Icon
-                as={item.icon}
-                boxSize={5}
-                mr={isCollapsed ? 0 : 3}
-                color={isActive ? "black" : "gray.500"}
-                _groupHover={{ color: "black" }}
-              />
+              <Box position="relative" mr={isCollapsed ? 0 : 3}>
+                <Icon
+                  as={item.icon}
+                  boxSize={5}
+                  color={isActive ? "black" : "gray.500"}
+                  _groupHover={{ color: "black" }}
+                />
+                {showBadge && isCollapsed && (
+                  <Box
+                    position="absolute"
+                    top="-4px"
+                    right="-4px"
+                    bg="red.500"
+                    color="white"
+                    borderRadius="full"
+                    fontSize="9px"
+                    minW="16px"
+                    h="16px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    fontWeight="bold"
+                    px="3px"
+                  >
+                    {pendingReturns}
+                  </Box>
+                )}
+              </Box>
               {!isCollapsed && (
-                <Text fontWeight={isActive ? "600" : "500"} fontSize="sm">
-                  {item.name}
-                </Text>
+                <Flex align="center" justify="space-between" flex="1">
+                  <Text fontWeight={isActive ? "600" : "500"} fontSize="sm">
+                    {item.name}
+                  </Text>
+                  {showBadge && (
+                    <Box
+                      bg="red.500"
+                      color="white"
+                      borderRadius="full"
+                      fontSize="10px"
+                      minW="20px"
+                      h="20px"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      fontWeight="bold"
+                      px="5px"
+                    >
+                      {pendingReturns}
+                    </Box>
+                  )}
+                </Flex>
               )}
             </Flex>
           );
