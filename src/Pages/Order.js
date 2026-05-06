@@ -353,28 +353,34 @@ const AdminOrders = () => {
                   </Td>
 
                   <Td>
-                    <Select
-                      size="sm"
-                      width="130px"
-                      borderColor="gray.200"
-                      bg="white"
-                      value={order.orderStatus}
-                      onChange={(e) =>
-                        handleStatusChange(order._id, e.target.value)
-                      }
-                    >
-                      <option value="pending" disabled>Pending (system)</option>
-                      <option value="payment confirmed" disabled>Payment Confirmed (system)</option>
-                      <option value="packed" disabled>Packed (legacy)</option>
-                      <option value="shipped" disabled>Shipped (legacy)</option>
-                      <option value="accepted">Accepted</option>
-                      <option value="in transit">In Transit</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="cancelled">Cancelled</option>
-                      <option value="refunded">Refunded</option>
-                      <option value="returned">Returned</option>
-                      <option value="replaced">Replaced</option>
-                    </Select>
+                    <VStack align="start" spacing={2}>
+                      <Badge
+                        borderRadius="full"
+                        px={2}
+                        colorScheme={statusColor(order.orderStatus)}
+                      >
+                        {order.orderStatus.toUpperCase()}
+                      </Badge>
+                      <Select
+                        size="sm"
+                        width="140px"
+                        borderColor="gray.200"
+                        bg="white"
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) handleStatusChange(order._id, e.target.value);
+                        }}
+                        placeholder="Change status..."
+                      >
+                        <option value="accepted">Accepted</option>
+                        <option value="in transit">In Transit</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="refunded">Refunded</option>
+                        <option value="returned">Returned</option>
+                        <option value="replaced">Replaced</option>
+                      </Select>
+                    </VStack>
                   </Td>
 
                   <Td textAlign="right">
