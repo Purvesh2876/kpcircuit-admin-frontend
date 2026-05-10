@@ -234,9 +234,9 @@ export const updateReturnRequestStatus = async (id, status) => {
     }
 };
 
-export const processReturnRequest = async (id) => {
+export const processReturnRequest = async (id, conditions = []) => {
     try {
-        const response = await instance.put(`/returns/admin/process/${id}`);
+        const response = await instance.put(`/returns/admin/process/${id}`, { conditions });
         return response.data;
     } catch (error) {
         console.error("Process return error:", error);
@@ -260,6 +260,16 @@ export const createReplacementOrder = async (id) => {
         return response.data;
     } catch (error) {
         console.error("Create replacement order error:", error);
+        throw error;
+    }
+};
+
+export const processWaivedRefund = async (id) => {
+    try {
+        const response = await instance.put(`/returns/admin/waived-refund/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Waived refund error:", error);
         throw error;
     }
 };
