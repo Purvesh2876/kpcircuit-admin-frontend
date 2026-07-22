@@ -27,7 +27,8 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { EditIcon, DeleteIcon, AddIcon } from "@chakra-ui/icons";
+import { EditIcon, DeleteIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
+import { IconButton, Badge } from "@chakra-ui/react";
 
 import {
   getAllCategories,
@@ -52,7 +53,33 @@ const SubCategory = () => {
     description: "",
     category: "",
     image: null,
+    filterAttributes: [],
   });
+
+  // filterAttributes rows keep options as a raw comma-separated string while
+  // editing (optionsText); it is split into an array only at submit time.
+  const toAttributeRows = (attrs) =>
+    (attrs || []).map((a) => ({
+      name: a.name || "",
+      type: a.type || "select",
+      unit: a.unit || "",
+      optionsText: (a.options || []).join(", "),
+    }));
+
+  const serializeAttributeRows = (rows) =>
+    JSON.stringify(
+      rows
+        .filter((r) => r.name.trim())
+        .map((r) => ({
+          name: r.name.trim(),
+          type: r.type,
+          unit: r.unit.trim(),
+          options:
+            r.type === "select"
+              ? r.optionsText.split(",").map((o) => o.trim()).filter(Boolean)
+              : [],
+        }))
+    );
 
   /* ---------- Color Mode (Top Only) ---------- */
   const pageBg = useColorModeValue("gray.50", "gray.900");
@@ -79,7 +106,7 @@ const SubCategory = () => {
 
   /* ---------------- ADD ---------------- */
   const openAddModal = () => {
-    setFormData({ name: "", description: "", category: "", image: null });
+    setFormData({ name: "", description: "", category: "", image: null, filterAttributes: [] });
     setImagePreview(null);
     setAddModalOpen(true);
   };
@@ -90,6 +117,7 @@ const SubCategory = () => {
     fd.append("name", formData.name);
     fd.append("description", formData.description);
     fd.append("category", formData.category);
+    fd.append("filterAttributes", serializeAttributeRows(formData.filterAttributes));
     if (formData.image) fd.append("image", formData.image);
     await createSubCategory(fd);
     setAddModalOpen(false);
@@ -104,6 +132,7 @@ const SubCategory = () => {
       description: sub.description || "",
       category: sub.category._id,
       image: null,
+      filterAttributes: toAttributeRows(sub.filterAttributes),
     });
     setImagePreview(
       sub.image
@@ -119,6 +148,7 @@ const SubCategory = () => {
     fd.append("name", formData.name);
     fd.append("description", formData.description);
     fd.append("category", formData.category);
+    fd.append("filterAttributes", serializeAttributeRows(formData.filterAttributes));
     if (formData.image) fd.append("image", formData.image);
     await updateSubCategory(selectedSubCategory._id, fd);
     setEditModalOpen(false);
@@ -178,6 +208,7 @@ const SubCategory = () => {
                   <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Name</Th>
                   <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Image</Th>
                   <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Category</Th>
+                  <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Filters</Th>
                   <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">Description</Th>
                   <Th color="gray.500" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wider" textAlign="right">Actions</Th>
                 </Tr>
@@ -204,6 +235,16 @@ const SubCategory = () => {
                       )}
                     </Td>
                     <Td color="gray.600">{sub.category?.name}</Td>
+                    <Td>
+                      {sub.filterAttributes?.length > 0 ? (
+                        <Badge colorScheme="purple" borderRadius="full" px={2}>
+                          {sub.filterAttributes.length} filter
+                          {sub.filterAttributes.length > 1 ? "s" : ""}
+                        </Badge>
+                      ) : (
+                        <Text as="span" color="gray.400">—</Text>
+                      )}
+                    </Td>
                     <Td maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis" color="gray.600">
                       {sub.description || "-"}
                     </Td>
@@ -283,8 +324,34 @@ const SubCategoryModal = ({
   onSubmit,
   submitLabel,
 }) => {
+  const attributeRows = formData.filterAttributes || [];
+
+  const updateRow = (index, patch) => {
+    const rows = attributeRows.map((row, i) =>
+      i === index ? { ...row, ...patch } : row
+    );
+    setFormData({ ...formData, filterAttributes: rows });
+  };
+
+  const addRow = () => {
+    setFormData({
+      ...formData,
+      filterAttributes: [
+        ...attributeRows,
+        { name: "", type: "select", unit: "", optionsText: "" },
+      ],
+    });
+  };
+
+  const removeRow = (index) => {
+    setFormData({
+      ...formData,
+      filterAttributes: attributeRows.filter((_, i) => i !== index),
+    });
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered>
+    <Modal isOpen={isOpen} onClose={onClose} isCentered size="xl">
       <ModalOverlay backdropFilter="blur(4px)" />
       <ModalContent borderRadius="2xl">
         <ModalHeader>{title}</ModalHeader>
@@ -364,6 +431,79 @@ const SubCategoryModal = ({
                   />
                 </Box>
               )}
+
+              {/* ---------- Filter Parameters ---------- */}
+              <Box>
+                <Flex justify="space-between" align="center" mb={2}>
+                  <FormLabel mb={0}>Filter Parameters</FormLabel>
+                  <Button size="xs" leftIcon={<AddIcon />} onClick={addRow}>
+                    Add Parameter
+                  </Button>
+                </Flex>
+
+                {attributeRows.length === 0 ? (
+                  <Text fontSize="sm" color="gray.500">
+                    No filter parameters. Products in this subcategory will only
+                    use the global filters (search, sort, price).
+                  </Text>
+                ) : (
+                  <Stack spacing={3}>
+                    {attributeRows.map((row, index) => (
+                      <Box
+                        key={index}
+                        p={3}
+                        borderWidth="1px"
+                        borderColor="gray.200"
+                        borderRadius="lg"
+                      >
+                        <Flex gap={2} mb={2}>
+                          <Input
+                            placeholder="Name (e.g. Resistance)"
+                            size="sm"
+                            value={row.name}
+                            onChange={(e) => updateRow(index, { name: e.target.value })}
+                          />
+                          <Select
+                            size="sm"
+                            w="130px"
+                            value={row.type}
+                            onChange={(e) => updateRow(index, { type: e.target.value })}
+                          >
+                            <option value="select">Select</option>
+                            <option value="number">Number</option>
+                            <option value="text">Text</option>
+                          </Select>
+                          <Input
+                            placeholder="Unit"
+                            size="sm"
+                            w="100px"
+                            value={row.unit}
+                            onChange={(e) => updateRow(index, { unit: e.target.value })}
+                          />
+                          <IconButton
+                            aria-label="Remove parameter"
+                            icon={<CloseIcon />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="red"
+                            onClick={() => removeRow(index)}
+                          />
+                        </Flex>
+                        {row.type === "select" && (
+                          <Input
+                            placeholder="Options, comma separated (e.g. 0603, 0805, 1206)"
+                            size="sm"
+                            value={row.optionsText}
+                            onChange={(e) =>
+                              updateRow(index, { optionsText: e.target.value })
+                            }
+                          />
+                        )}
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
+              </Box>
 
               <Button type="submit" colorScheme="purple" borderRadius="lg">
                 {submitLabel}

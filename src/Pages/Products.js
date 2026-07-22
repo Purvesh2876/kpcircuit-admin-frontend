@@ -96,11 +96,20 @@ const ProductManagement = () => {
     description: "",
     price: "",
     stock: "",
+    minOrderQty: 1,
     featured: false,
     isReturnable: true,
     isReplaceable: true,
     returnWindowDays: 7,
   });
+
+  // Parametric attribute values for the selected subcategory: { [key]: value }
+  const [attributeValues, setAttributeValues] = useState({});
+
+  // Filter parameter definitions of the currently selected subcategory
+  const selectedSubCategoryAttrs =
+    subCategories.find((s) => s._id === formData.subCategory)
+      ?.filterAttributes || [];
 
   /* ---------------- FETCH ---------------- */
 
@@ -152,6 +161,7 @@ const ProductManagement = () => {
       description: "",
       price: "",
       stock: "",
+      minOrderQty: 1,
       featured: false,
       isReturnable: true,
       isReplaceable: true,
@@ -160,6 +170,7 @@ const ProductManagement = () => {
     setExistingImages([]); // Reset images
     setNewImages([]); // Reset images
     setSubCategories([]);
+    setAttributeValues({});
     setIsModalOpen(true);
   };
 
@@ -172,6 +183,7 @@ const ProductManagement = () => {
       subCategory: product.subCategory?._id || "", // Safe navigation
       description: product.description,
       price: product.price,
+      minOrderQty: product.minOrderQty ?? 1,
       featured: product.featured,
       isReturnable: product.isReturnable ?? true,
       isReplaceable: product.isReplaceable ?? true,
@@ -181,6 +193,13 @@ const ProductManagement = () => {
     // Set existing images from the product object
     setExistingImages(product.images || []);
     setNewImages([]); // Reset new images
+
+    // Prefill attribute values from the saved product
+    setAttributeValues(
+      Object.fromEntries(
+        (product.attributes || []).map((a) => [a.key, a.value])
+      )
+    );
 
     if (product.category?._id) {
       fetchSubCategories(product.category._id);
@@ -193,6 +212,7 @@ const ProductManagement = () => {
   const handleCategoryChange = async (e) => {
     const value = e.target.value;
     setFormData({ ...formData, category: value, subCategory: "" });
+    setAttributeValues({});
     fetchSubCategories(value);
   };
 
@@ -262,6 +282,16 @@ const ProductManagement = () => {
 
     // Also send removedImages as empty array to prevent backend crash if it expects it
     fd.append("removedImages", JSON.stringify([]));
+
+    // 4. Append parametric attribute values (only non-empty ones)
+    fd.append(
+      "attributes",
+      JSON.stringify(
+        Object.entries(attributeValues)
+          .filter(([, v]) => String(v).trim())
+          .map(([key, value]) => ({ key, value: String(value).trim() }))
+      )
+    );
 
     try {
       if (editingProduct) {
@@ -435,9 +465,10 @@ const ProductManagement = () => {
                     <Select
                       size="sm"
                       value={formData.subCategory}
-                      onChange={(e) =>
-                        setFormData({ ...formData, subCategory: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFormData({ ...formData, subCategory: e.target.value });
+                        setAttributeValues({});
+                      }}
                     >
                       <option value="">Select SubCategory</option>
                       {subCategories.map((s) => (
@@ -448,6 +479,56 @@ const ProductManagement = () => {
                     </Select>
                   </FormControl>
                 </SimpleGrid>
+
+                {/* -------- PARAMETRIC ATTRIBUTES (per subcategory) -------- */}
+                {selectedSubCategoryAttrs.length > 0 && (
+                  <Box p={3} borderWidth="1px" borderColor="gray.200" borderRadius="lg">
+                    <Text fontSize="sm" fontWeight="bold" mb={2}>
+                      Specifications
+                    </Text>
+                    <SimpleGrid columns={[1, 2]} spacing={3}>
+                      {selectedSubCategoryAttrs.map((attr) => (
+                        <FormControl key={attr.key}>
+                          <FormLabel fontSize="sm">
+                            {attr.name}
+                            {attr.unit ? ` (${attr.unit})` : ""}
+                          </FormLabel>
+                          {attr.type === "select" && attr.options?.length > 0 ? (
+                            <Select
+                              size="sm"
+                              value={attributeValues[attr.key] || ""}
+                              onChange={(e) =>
+                                setAttributeValues({
+                                  ...attributeValues,
+                                  [attr.key]: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">Not set</option>
+                              {attr.options.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </Select>
+                          ) : (
+                            <Input
+                              size="sm"
+                              placeholder={attr.type === "number" ? "e.g. 10K" : ""}
+                              value={attributeValues[attr.key] || ""}
+                              onChange={(e) =>
+                                setAttributeValues({
+                                  ...attributeValues,
+                                  [attr.key]: e.target.value,
+                                })
+                              }
+                            />
+                          )}
+                        </FormControl>
+                      ))}
+                    </SimpleGrid>
+                  </Box>
+                )}
 
                 {/* -------- DESCRIPTION -------- */}
                 <FormControl>
@@ -489,6 +570,19 @@ const ProductManagement = () => {
                       />
                     </FormControl>
                   )}
+
+                  <FormControl>
+                    <FormLabel fontSize="sm">Min Order Qty</FormLabel>
+                    <Input
+                      size="sm"
+                      type="number"
+                      min={1}
+                      value={formData.minOrderQty}
+                      onChange={(e) =>
+                        setFormData({ ...formData, minOrderQty: e.target.value })
+                      }
+                    />
+                  </FormControl>
                 </SimpleGrid>
 
                 <Checkbox
