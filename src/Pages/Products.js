@@ -27,6 +27,8 @@ import {
   IconButton,
   Text,
   Textarea, // Added Textarea for description
+  Spinner,
+  Flex,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, CloseIcon } from "@chakra-ui/icons";
 
@@ -37,7 +39,7 @@ import {
   deleteProduct,
   getAllCategories,
   getSubCategoriesByCategory,
-  addStock,
+  adjustStock,
   getInventoryLogs,
 } from "../actions/apiActions";
 
@@ -51,34 +53,56 @@ const ProductManagement = () => {
 
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [stockMode, setStockMode] = useState("add"); // "add" | "remove" | "set"
   const [stockQty, setStockQty] = useState("");
+  const [stockReason, setStockReason] = useState("");
   const [stockNote, setStockNote] = useState("");
+
+  // Manual stock changes are restricted to these reasons, mirroring the
+  // backend allow-list — system flows (orders, returns) use their own
+  // reasons and never appear here.
+  const STOCK_REASONS = {
+    add: ["PURCHASE", "ADJUSTMENT"],
+    remove: ["DAMAGED", "ADJUSTMENT"],
+    set: ["ADJUSTMENT"], // a correction always nets to ADJUSTMENT (IN or OUT depending on direction)
+  };
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [historyLogs, setHistoryLogs] = useState([]);
   const [historyProduct, setHistoryProduct] = useState(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
 
   const openStockModal = (product) => {
     setSelectedProduct(product);
+    setStockMode("add");
     setStockQty("");
+    setStockReason("");
     setStockNote("");
     setIsStockModalOpen(true);
   };
 
   const openHistoryModal = async (product, page = 1) => {
+    // Open immediately with a loading state — no data (or a failed fetch)
+    // should never surface as an alert(); the modal itself shows what happened.
+    setHistoryProduct(product);
+    setIsHistoryModalOpen(true);
+    setHistoryLoading(true);
+    setHistoryError(false);
+
     try {
       const res = await getInventoryLogs(product._id, page, 10);
 
-      setHistoryLogs(res.logs);
-      setHistoryPage(res.page);
-      setHistoryTotalPages(res.totalPages);
-
-      setHistoryProduct(product);
-      setIsHistoryModalOpen(true);
+      setHistoryLogs(res.logs || []);
+      setHistoryPage(res.page || 1);
+      setHistoryTotalPages(res.totalPages || 0);
     } catch (err) {
       console.error(err);
-      alert("Failed to load history");
+      setHistoryLogs([]);
+      setHistoryError(true);
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -234,15 +258,30 @@ const ProductManagement = () => {
     setExistingImages(existingImages.filter((_, i) => i !== index));
   };
 
-  const handleAddStock = async () => {
-    if (!stockQty || Number(stockQty) <= 0) {
-      alert("Enter valid quantity");
+  const handleAdjustStock = async () => {
+    if (stockMode === "set") {
+      if (stockQty === "" || Number(stockQty) < 0) {
+        alert("Enter a valid stock quantity");
+        return;
+      }
+    } else if (!stockQty || Number(stockQty) <= 0) {
+      alert("Enter a valid quantity");
+      return;
+    }
+    if (!stockReason) {
+      alert("Select a reason");
+      return;
+    }
+    if (!stockNote.trim()) {
+      alert("A description is required for this stock change");
       return;
     }
 
     try {
-      await addStock(selectedProduct._id, {
+      await adjustStock(selectedProduct._id, {
+        mode: stockMode,
         quantity: stockQty,
+        reason: stockReason,
         note: stockNote,
       });
 
@@ -250,7 +289,7 @@ const ProductManagement = () => {
       fetchProducts();
     } catch (err) {
       console.error(err);
-      alert("Failed to add stock");
+      alert(err?.response?.data?.message || "Failed to update stock");
     }
   };
 
@@ -375,7 +414,7 @@ const ProductManagement = () => {
                         _hover={{ bg: "gray.50" }}
                         onClick={() => openStockModal(p)}
                       >
-                        + Stock
+                        Stock
                       </Button>
                       <Button
                         size="sm"
@@ -710,29 +749,93 @@ const ProductManagement = () => {
       <Modal isOpen={isStockModalOpen} onClose={() => setIsStockModalOpen(false)} isCentered>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Add Stock</ModalHeader>
+          <ModalHeader>
+            Adjust Stock
+            {selectedProduct && (
+              <Text fontSize="sm" fontWeight="normal" color="gray.500" mt={1}>
+                {selectedProduct.name} — current stock: {selectedProduct.stock}
+              </Text>
+            )}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={4}>
-            <Stack spacing={3}>
+            <Stack spacing={4}>
+              <FormControl>
+                <FormLabel>Action</FormLabel>
+                <ButtonGroup isAttached w="full">
+                  {[
+                    { key: "add", label: "Add Stock" },
+                    { key: "remove", label: "Remove Stock" },
+                    { key: "set", label: "Set Exact Stock" },
+                  ].map((opt) => (
+                    <Button
+                      key={opt.key}
+                      flex="1"
+                      size="sm"
+                      variant={stockMode === opt.key ? "solid" : "outline"}
+                      colorScheme={stockMode === opt.key ? "purple" : "gray"}
+                      onClick={() => {
+                        setStockMode(opt.key);
+                        setStockQty("");
+                        setStockReason("");
+                      }}
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </ButtonGroup>
+              </FormControl>
+
               <FormControl isRequired>
-                <FormLabel>Quantity</FormLabel>
+                <FormLabel>
+                  {stockMode === "set" ? "New Total Stock" : "Quantity"}
+                </FormLabel>
                 <Input
                   type="number"
+                  min={0}
                   value={stockQty}
                   onChange={(e) => setStockQty(e.target.value)}
                 />
+                {stockMode === "remove" && selectedProduct && (
+                  <Text fontSize="xs" color="gray.500" mt={1}>
+                    Max: {selectedProduct.stock} in stock
+                  </Text>
+                )}
               </FormControl>
 
-              <FormControl>
-                <FormLabel>Note</FormLabel>
-                <Input
+              <FormControl isRequired>
+                <FormLabel>Reason</FormLabel>
+                <Select
+                  placeholder="Select reason"
+                  value={stockReason}
+                  onChange={(e) => setStockReason(e.target.value)}
+                >
+                  {STOCK_REASONS[stockMode].map((r) => (
+                    <option key={r} value={r}>
+                      {r.charAt(0) + r.slice(1).toLowerCase()}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Description</FormLabel>
+                <Textarea
+                  placeholder="Explain this stock change — required for the audit log"
                   value={stockNote}
                   onChange={(e) => setStockNote(e.target.value)}
                 />
               </FormControl>
 
-              <Button colorScheme="blue" onClick={handleAddStock}>
-                Add Stock
+              <Button
+                colorScheme={
+                  stockMode === "remove" ? "red" : stockMode === "set" ? "purple" : "blue"
+                }
+                onClick={handleAdjustStock}
+              >
+                {stockMode === "add" && "Add Stock"}
+                {stockMode === "remove" && "Remove Stock"}
+                {stockMode === "set" && "Update Stock"}
               </Button>
             </Stack>
           </ModalBody>
@@ -746,59 +849,87 @@ const ProductManagement = () => {
           </ModalHeader>
           <ModalCloseButton />
 
-          <ModalBody>
-            <Box overflowX="auto" overflowY="auto" maxH="60vh">
-              <Table size="sm">
-              <Thead>
-                <Tr>
-                  <Th>Date</Th>
-                  <Th>Type</Th>
-                  <Th>Qty</Th>
-                  <Th>Reason</Th>
-                  <Th>Note</Th>
-                </Tr>
-              </Thead>
+          <ModalBody pb={6}>
+            {historyLoading ? (
+              <Flex justify="center" align="center" py={10}>
+                <Spinner size="lg" color="purple.500" />
+              </Flex>
+            ) : historyError ? (
+              <Flex direction="column" align="center" py={10} gap={3}>
+                <Text color="gray.600">Couldn't load history right now.</Text>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openHistoryModal(historyProduct, historyPage)}
+                >
+                  Retry
+                </Button>
+              </Flex>
+            ) : historyLogs.length === 0 ? (
+              <Flex direction="column" align="center" py={10} gap={1}>
+                <Text fontWeight="medium" color="gray.600">
+                  No stock history yet
+                </Text>
+                <Text fontSize="sm" color="gray.400">
+                  Changes made via Add / Remove / Set Stock will show up here.
+                </Text>
+              </Flex>
+            ) : (
+              <>
+                <Box overflowX="auto" overflowY="auto" maxH="60vh">
+                  <Table size="sm">
+                    <Thead>
+                      <Tr>
+                        <Th>Date</Th>
+                        <Th>Type</Th>
+                        <Th>Qty</Th>
+                        <Th>Reason</Th>
+                        <Th>Note</Th>
+                      </Tr>
+                    </Thead>
 
-              <Tbody>
-                {historyLogs.map((log) => (
-                  <Tr key={log._id}>
-                    <Td>{new Date(log.createdAt).toLocaleString()}</Td>
+                    <Tbody>
+                      {historyLogs.map((log) => (
+                        <Tr key={log._id}>
+                          <Td>{new Date(log.createdAt).toLocaleString()}</Td>
 
-                    <Td color={log.type === "IN" ? "green.500" : "red.500"}>
-                      {log.type}
-                    </Td>
+                          <Td color={log.type === "IN" ? "green.500" : "red.500"}>
+                            {log.type}
+                          </Td>
 
-                    <Td>{log.quantity}</Td>
-                    <Td>{log.reason}</Td>
-                    <Td>{log.note}</Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-            </Box>
+                          <Td>{log.quantity}</Td>
+                          <Td>{log.reason}</Td>
+                          <Td>{log.note}</Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </Box>
 
-            {/* Pagination */}
-            <Box display="flex" justifyContent="space-between" mt={4}>
-              <Button
-                size="sm"
-                isDisabled={historyPage <= 1}
-                onClick={() => openHistoryModal(historyProduct, historyPage - 1)}
-              >
-                Prev
-              </Button>
+                {/* Pagination */}
+                <Box display="flex" justifyContent="space-between" mt={4}>
+                  <Button
+                    size="sm"
+                    isDisabled={historyPage <= 1}
+                    onClick={() => openHistoryModal(historyProduct, historyPage - 1)}
+                  >
+                    Prev
+                  </Button>
 
-              <Text>
-                Page {historyPage} / {historyTotalPages}
-              </Text>
+                  <Text>
+                    Page {historyPage} / {historyTotalPages}
+                  </Text>
 
-              <Button
-                size="sm"
-                isDisabled={historyPage >= historyTotalPages || historyTotalPages === 0}
-                onClick={() => openHistoryModal(historyProduct, historyPage + 1)}
-              >
-                Next
-              </Button>
-            </Box>
+                  <Button
+                    size="sm"
+                    isDisabled={historyPage >= historyTotalPages || historyTotalPages === 0}
+                    onClick={() => openHistoryModal(historyProduct, historyPage + 1)}
+                  >
+                    Next
+                  </Button>
+                </Box>
+              </>
+            )}
           </ModalBody>
         </ModalContent>
       </Modal>

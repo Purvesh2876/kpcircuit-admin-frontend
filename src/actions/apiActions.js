@@ -8,6 +8,32 @@ const instance = axios.create({
     withCredentials: true,
 });
 
+// Global session-expiry handling: a 401 means the token is missing, invalid,
+// or expired server-side. Every admin screen was previously left to fail
+// silently (or with its own confusing error) when this happened — instead,
+// clear the stale session, flag it for the login page to explain, and kick
+// the admin back to login immediately (mirrors the manual logout flow in
+// Sidebar.js/header.js).
+let sessionExpiryHandled = false;
+
+instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error?.response?.status;
+        const url = error?.config?.url || "";
+        const isAuthCall = url.includes("/auth/adminLogin") || url.includes("/auth/login");
+
+        if (status === 401 && !isAuthCall && !sessionExpiryHandled) {
+            sessionExpiryHandled = true;
+            localStorage.clear();
+            sessionStorage.setItem("sessionExpired", "1");
+            window.location.href = "/admin";
+        }
+
+        return Promise.reject(error);
+    }
+);
+
 /* ================= AUTH ================= */
 
 export async function login(email, password) {
@@ -179,14 +205,14 @@ export const updateOrderStatus = async (id, statusData) => {
 };
 
 
-// Add stock
+// Add, remove, or correct stock (mode: "add" | "remove" | "set", reason + note required)
 
-export const addStock = async (productId, stockData) => {
+export const adjustStock = async (productId, adjustmentData) => {
     try {
-        const res = await instance.post(`/products/${productId}/add-stock`, stockData);
+        const res = await instance.post(`/products/${productId}/adjust-stock`, adjustmentData);
         return res.data;
     } catch (error) {
-        console.error("Add stock error:", error);
+        console.error("Adjust stock error:", error);
         throw error;
     }
 };

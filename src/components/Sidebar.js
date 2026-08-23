@@ -55,7 +55,7 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
   const handleLogout = async () => {
     localStorage.clear();
     await logout();
-    window.location.href = "/";
+    window.location.href = "/admin";
   };
 
   const adminName = localStorage.getItem("adminName") || "Admin";

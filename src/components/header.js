@@ -12,7 +12,7 @@ const Header = () => {
   const handleLogout = async () => {
     localStorage.clear();
     await logout();
-    window.location.href = "/";
+    window.location.href = "/admin";
   };
 
   return (
