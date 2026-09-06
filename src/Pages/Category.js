@@ -96,10 +96,18 @@ const Category = () => {
     fd.append("name", name);
     fd.append("image", imageFile);
 
-    await createCategory(fd);
-    setIsAddOpen(false);
-    resetForm();
-    fetchCategories();
+    try {
+      await createCategory(fd);
+      setIsAddOpen(false);
+      resetForm();
+      fetchCategories();
+    } catch (error) {
+      toast({
+        title: "Failed to create category",
+        description: error?.response?.data?.message || "Please try again.",
+        status: "error",
+      });
+    }
   };
 
   const openEdit = (cat) => {
@@ -118,16 +126,32 @@ const Category = () => {
     fd.append("name", name);
     if (imageFile) fd.append("image", imageFile);
 
-    await updateCategory(selectedCategory._id, fd);
-    setIsEditOpen(false);
-    resetForm();
-    fetchCategories();
+    try {
+      await updateCategory(selectedCategory._id, fd);
+      setIsEditOpen(false);
+      resetForm();
+      fetchCategories();
+    } catch (error) {
+      toast({
+        title: "Failed to update category",
+        description: error?.response?.data?.message || "Please try again.",
+        status: "error",
+      });
+    }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm("Delete this category?")) {
-      await deleteCategory(id);
-      fetchCategories();
+      try {
+        await deleteCategory(id);
+        fetchCategories();
+      } catch (error) {
+        toast({
+          title: "Failed to delete category",
+          description: error?.response?.data?.message || "Please try again.",
+          status: "error",
+        });
+      }
     }
   };
 

@@ -29,8 +29,9 @@ import {
   Textarea, // Added Textarea for description
   Spinner,
   Flex,
+  Badge,
 } from "@chakra-ui/react";
-import { EditIcon, DeleteIcon, CloseIcon } from "@chakra-ui/icons";
+import { EditIcon, DeleteIcon, CloseIcon, AddIcon } from "@chakra-ui/icons";
 
 import {
   getAllProducts,
@@ -112,6 +113,11 @@ const ProductManagement = () => {
   // 2. Array of File objects for new uploads
   const [newImages, setNewImages] = useState([]);
 
+  // Optional datasheet PDF
+  const [existingDatasheet, setExistingDatasheet] = useState(null); // saved path, or null
+  const [datasheetFile, setDatasheetFile] = useState(null); // newly selected File, or null
+  const [removeDatasheet, setRemoveDatasheet] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     manufacturer: "",
@@ -129,6 +135,10 @@ const ProductManagement = () => {
 
   // Parametric attribute values for the selected subcategory: { [key]: value }
   const [attributeValues, setAttributeValues] = useState({});
+
+  // Bulk/quantity pricing rows: { minQty, maxQty, pricePerUnit }.
+  // maxQty is kept as a raw string; empty means "and above" (open-ended).
+  const [priceTiers, setPriceTiers] = useState([]);
 
   // Filter parameter definitions of the currently selected subcategory
   const selectedSubCategoryAttrs =
@@ -193,8 +203,12 @@ const ProductManagement = () => {
     });
     setExistingImages([]); // Reset images
     setNewImages([]); // Reset images
+    setExistingDatasheet(null);
+    setDatasheetFile(null);
+    setRemoveDatasheet(false);
     setSubCategories([]);
     setAttributeValues({});
+    setPriceTiers([]);
     setIsModalOpen(true);
   };
 
@@ -218,11 +232,25 @@ const ProductManagement = () => {
     setExistingImages(product.images || []);
     setNewImages([]); // Reset new images
 
+    // Prefill the existing datasheet, if any
+    setExistingDatasheet(product.datasheet || null);
+    setDatasheetFile(null);
+    setRemoveDatasheet(false);
+
     // Prefill attribute values from the saved product
     setAttributeValues(
       Object.fromEntries(
         (product.attributes || []).map((a) => [a.key, a.value])
       )
+    );
+
+    // Prefill bulk pricing tiers from the saved product
+    setPriceTiers(
+      (product.priceTiers || []).map((t) => ({
+        minQty: String(t.minQty),
+        maxQty: t.maxQty === null || t.maxQty === undefined ? "" : String(t.maxQty),
+        pricePerUnit: String(t.pricePerUnit),
+      }))
     );
 
     if (product.category?._id) {
@@ -240,12 +268,41 @@ const ProductManagement = () => {
     fetchSubCategories(value);
   };
 
+  // Bulk pricing tier rows
+  const addPriceTierRow = () => {
+    setPriceTiers((rows) => [...rows, { minQty: "", maxQty: "", pricePerUnit: "" }]);
+  };
+
+  const updatePriceTierRow = (index, patch) => {
+    setPriceTiers((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, ...patch } : row))
+    );
+  };
+
+  const removePriceTierRow = (index) => {
+    setPriceTiers((rows) => rows.filter((_, i) => i !== index));
+  };
+
   // Handle selecting new files
   const handleImageChange = (e) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       setNewImages((prev) => [...prev, ...filesArray]);
     }
+  };
+
+  // Datasheet: pick a new PDF (replaces any existing one on save)
+  const handleDatasheetChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDatasheetFile(file);
+    setRemoveDatasheet(false);
+  };
+
+  const clearDatasheet = () => {
+    setDatasheetFile(null);
+    setExistingDatasheet(null);
+    setRemoveDatasheet(true);
   };
 
   // Remove a newly selected image (File object)
@@ -310,6 +367,13 @@ const ProductManagement = () => {
       fd.append("images", img);
     });
 
+    // Datasheet: either a newly picked PDF, or a removal request
+    if (datasheetFile) {
+      fd.append("datasheet", datasheetFile);
+    } else if (removeDatasheet) {
+      fd.append("removeDatasheet", "true");
+    }
+
     // 3. Append EXISTING images (Strings) - using JSON.stringify
     // This fixes the "Unexpected token" error on the backend
     if (existingImages.length > 0) {
@@ -332,6 +396,21 @@ const ProductManagement = () => {
       )
     );
 
+    // 5. Append bulk pricing tiers (only fully-filled rows; maxQty stays
+    // blank/null for an open-ended top tier, e.g. "30+")
+    fd.append(
+      "priceTiers",
+      JSON.stringify(
+        priceTiers
+          .filter((t) => String(t.minQty).trim() && String(t.pricePerUnit).trim())
+          .map((t) => ({
+            minQty: Number(t.minQty),
+            maxQty: String(t.maxQty).trim() ? Number(t.maxQty) : null,
+            pricePerUnit: Number(t.pricePerUnit),
+          }))
+      )
+    );
+
     try {
       if (editingProduct) {
         await updateProduct(editingProduct._id, fd);
@@ -342,14 +421,18 @@ const ProductManagement = () => {
       fetchProducts();
     } catch (error) {
       console.error("Operation failed:", error);
-      alert("Failed to save product. Check console for details.");
+      alert(error?.response?.data?.message || "Failed to save product. Check console for details.");
     }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
-      await deleteProduct(id);
-      fetchProducts();
+      try {
+        await deleteProduct(id);
+        fetchProducts();
+      } catch (error) {
+        alert(error?.response?.data?.message || "Failed to delete product. Please try again.");
+      }
     }
   };
 
@@ -395,7 +478,14 @@ const ProductManagement = () => {
                     )}
                   </Td>
                   <Td color="gray.600">{p.category?.name}</Td>
-                  <Td color="gray.600">₹{p.price}</Td>
+                  <Td color="gray.600">
+                    ₹{p.price}
+                    {p.priceTiers?.length > 0 && (
+                      <Badge ml={2} colorScheme="green" borderRadius="full" fontSize="0.6rem">
+                        Bulk
+                      </Badge>
+                    )}
+                  </Td>
                   <Td color="gray.600">{p.stock}</Td>
                   <Td textAlign="right">
                     <ButtonGroup size="sm" variant="ghost" spacing={1}>
@@ -624,6 +714,72 @@ const ProductManagement = () => {
                   </FormControl>
                 </SimpleGrid>
 
+                {/* -------- BULK PRICING -------- */}
+                <Box p={3} borderWidth="1px" borderColor="gray.200" borderRadius="lg">
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Text fontSize="sm" fontWeight="bold">
+                      Bulk Pricing
+                    </Text>
+                    <Button size="xs" leftIcon={<AddIcon />} onClick={addPriceTierRow}>
+                      Add Tier
+                    </Button>
+                  </Flex>
+
+                  {priceTiers.length === 0 ? (
+                    <Text fontSize="sm" color="gray.500">
+                      No quantity tiers. The base price above applies to every order.
+                    </Text>
+                  ) : (
+                    <Stack spacing={2}>
+                      {priceTiers.map((tier, index) => (
+                        <Flex key={index} gap={2} align="center">
+                          <Input
+                            size="sm"
+                            type="number"
+                            placeholder="Min qty"
+                            value={tier.minQty}
+                            onChange={(e) =>
+                              updatePriceTierRow(index, { minQty: e.target.value })
+                            }
+                          />
+                          <Text fontSize="sm" color="gray.400">
+                            to
+                          </Text>
+                          <Input
+                            size="sm"
+                            type="number"
+                            placeholder="Max qty (blank = and above)"
+                            value={tier.maxQty}
+                            onChange={(e) =>
+                              updatePriceTierRow(index, { maxQty: e.target.value })
+                            }
+                          />
+                          <Text fontSize="sm" color="gray.400">
+                            @ ₹
+                          </Text>
+                          <Input
+                            size="sm"
+                            type="number"
+                            placeholder="Price/pc"
+                            value={tier.pricePerUnit}
+                            onChange={(e) =>
+                              updatePriceTierRow(index, { pricePerUnit: e.target.value })
+                            }
+                          />
+                          <IconButton
+                            aria-label="Remove tier"
+                            icon={<CloseIcon />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="red"
+                            onClick={() => removePriceTierRow(index)}
+                          />
+                        </Flex>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+
                 <Checkbox
                   size="sm"
                   isChecked={formData.featured}
@@ -736,6 +892,58 @@ const ProductManagement = () => {
                       </Box>
                     ))}
                   </SimpleGrid>
+                </FormControl>
+
+                {/* -------- DATASHEET (PDF, optional) -------- */}
+                <FormControl>
+                  <FormLabel fontSize="sm">Datasheet (PDF, optional)</FormLabel>
+                  <Input
+                    size="sm"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleDatasheetChange}
+                  />
+
+                  {(existingDatasheet || datasheetFile) && (
+                    <Flex
+                      align="center"
+                      justify="space-between"
+                      mt={2}
+                      p={2}
+                      borderWidth="1px"
+                      borderColor="gray.200"
+                      borderRadius="md"
+                    >
+                      <Text fontSize="sm" color="gray.700" noOfLines={1}>
+                        📄{" "}
+                        {datasheetFile
+                          ? datasheetFile.name
+                          : existingDatasheet.split("/").pop()}
+                      </Text>
+                      <Flex gap={2}>
+                        {existingDatasheet && !datasheetFile && (
+                          <Button
+                            as="a"
+                            href={`/uploads${existingDatasheet}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="xs"
+                            variant="outline"
+                          >
+                            View
+                          </Button>
+                        )}
+                        <IconButton
+                          aria-label="Remove datasheet"
+                          icon={<CloseIcon />}
+                          size="xs"
+                          colorScheme="red"
+                          variant="ghost"
+                          onClick={clearDatasheet}
+                        />
+                      </Flex>
+                    </Flex>
+                  )}
                 </FormControl>
 
                 <Button type="submit" colorScheme="purple" size="sm" mt={2}>

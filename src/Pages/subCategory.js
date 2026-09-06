@@ -26,6 +26,7 @@ import {
   Flex,
   Text,
   useColorModeValue,
+  useToast,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { IconButton, Badge } from "@chakra-ui/react";
@@ -39,6 +40,7 @@ import {
 } from "../actions/apiActions";
 
 const SubCategory = () => {
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [subCategories, setSubCategories] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -119,9 +121,17 @@ const SubCategory = () => {
     fd.append("category", formData.category);
     fd.append("filterAttributes", serializeAttributeRows(formData.filterAttributes));
     if (formData.image) fd.append("image", formData.image);
-    await createSubCategory(fd);
-    setAddModalOpen(false);
-    fetchData();
+    try {
+      await createSubCategory(fd);
+      setAddModalOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Failed to create subcategory",
+        description: error?.response?.data?.message || "Please try again.",
+        status: "error",
+      });
+    }
   };
 
   /* ---------------- EDIT ---------------- */
@@ -150,15 +160,31 @@ const SubCategory = () => {
     fd.append("category", formData.category);
     fd.append("filterAttributes", serializeAttributeRows(formData.filterAttributes));
     if (formData.image) fd.append("image", formData.image);
-    await updateSubCategory(selectedSubCategory._id, fd);
-    setEditModalOpen(false);
-    fetchData();
+    try {
+      await updateSubCategory(selectedSubCategory._id, fd);
+      setEditModalOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Failed to update subcategory",
+        description: error?.response?.data?.message || "Please try again.",
+        status: "error",
+      });
+    }
   };
 
   /* ---------------- DELETE ---------------- */
   const handleDelete = async (id) => {
-    await deleteSubCategory(id);
-    fetchData();
+    try {
+      await deleteSubCategory(id);
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Failed to delete subcategory",
+        description: error?.response?.data?.message || "Please try again.",
+        status: "error",
+      });
+    }
   };
 
   return (
